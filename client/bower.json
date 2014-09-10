@@ -1,0 +1,30 @@
+{
+  "name": "coda-lisa-client",
+  "version": "0.0.1",
+  "authors": [
+    "Rico Huijbers <rix0rrr@gmail.com>"
+  ],
+  "description": "Coda Lisa Client",
+  "moduleType": [
+    "globals"
+  ],
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "jquery": "~2.1.1",
+    "es5-shim": "~4.0.3",
+    "modernizr": "~2.8.3",
+    "foundation": "~5.4.3",
+    "ace-builds": "~1.1.6",
+    "knockout": "~3.2.0",
+    "lodash": "~2.4.1",
+    "json2": "*"
+  }
+}

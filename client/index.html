@@ -1,0 +1,39 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Coda Lisa</title>
+        <meta charset="utf-8" />
+
+        <link rel="stylesheet" href="bower_components/foundation/css/normalize.css">
+        <link rel="stylesheet" href="bower_components/foundation/css/foundation.css">
+
+        <link rel="stylesheet" href="styles.css">
+      </head>
+    <body>
+        <div class="listpane" data-bind="with: scripts">
+            <h5>Scripts</h5>
+            <ul class="list" data-bind="foreach: scripts">
+                <li class="list-item" data-bind="text: title, css: { selected: $parent.selected() == file }, click: $parent.select"></li>
+            </ul>
+            <center><button class="small radius success" data-bind="click: newScript">New...</button></center>
+        </div>
+
+        <div class="editpane" data-bind="with: activeScript">
+            <input type="text" placeholder="My Script..." data-bind="value: title, disable: disabled"/>
+            <div id="editor"></div>
+        </div>
+
+        <script src="bower_components/es5-shim/es5-shim.min.js"></script>
+        <script src="bower_components/jquery/dist/jquery.min.js"></script>
+        <script src="bower_components/modernizr/modernizr.js"></script>
+        <script src="bower_components/foundation/js/foundation.min.js"></script>
+        <script src="bower_components/ace-builds/src-min-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
+        <script src="bower_components/knockout/dist/knockout.js"></script>
+        <script src="bower_components/lodash/dist/lodash.min.js"></script>
+        <script src="bower_components/json2/json2.js"></script>
+
+        <script src="js/errors.js"></script>
+        <script src="js/scripts.js"></script>
+        <script src="js/main.js"></script>
+    </body>
+</html>

@@ -1,0 +1,60 @@
+body {
+    padding: 10px;
+}
+
+.listpane {
+    position: relative;
+    float: left;
+    width: 20%;
+    padding-right: 10px;
+    height: 100%;
+    overflow: auto;
+}
+
+.listpane h5 {
+    height: 50px;
+    line-height: 70px;
+}
+
+.editpane {
+    float: left;
+    position: relative;
+    width: 40%;
+    height: 100%;
+    top: 10px;
+    bottom: 10px;
+}
+
+.bottom-bar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 50px;
+    text-align: right;
+}
+
+#editor {
+    position: absolute;
+    top: 50px;
+    left: 0px;
+    right: 0px;
+    bottom: 10px;
+    border: solid 1px #aaa;
+}
+
+ul.list {
+    margin-left: 0;
+}
+
+ul.list li {
+    padding: 0.2em 0.6em;
+    cursor: pointer;
+    color: black;
+    border-top: solid 1px #ddd;
+}
+
+ul.list li.selected {
+    background: #008CBA;
+    color: white;
+}
