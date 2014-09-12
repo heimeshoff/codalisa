@@ -25,6 +25,15 @@ body {
     bottom: 10px;
 }
 
+.previewpane {
+    float: left;
+    position: relative;
+    width: 30%;
+    height: 100%;
+    top: 10px;
+    bottom: 10px;
+}
+
 .bottom-bar {
     position: absolute;
     left: 0;

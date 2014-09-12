@@ -50,8 +50,6 @@ module.exports = function(dir) {
             
             // FIXME: No exploity namey
             
-            console.log(obj);
-            
             if (!obj) return Q.reject(new Error('No object'));
             if (!obj.script) return Q.reject(new Error('No script'));
             if (!obj.title) title = 'Nameless script';

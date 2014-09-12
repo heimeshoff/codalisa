@@ -44,3 +44,5 @@ socket.on('scripts-changed', function(msg){
 });
 
 editor.focus();
+
+var sim = new Simulation(new Canvas(document.getElementById('preview')), {});
