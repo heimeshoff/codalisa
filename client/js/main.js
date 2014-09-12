@@ -37,4 +37,10 @@ window.setInterval(function() {
 ko.applyBindings(models);
 models.scripts.refresh();
 
+var socket = io();
+
+socket.on('scripts-changed', function(msg){
+    models.scripts.refresh();
+});
+
 editor.focus();

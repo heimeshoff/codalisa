@@ -12,7 +12,7 @@ var Scripts = function() {
                 .contains(self.selected());
 
             if (!selectionOk)
-                self.selected(contents ? contents[0].file : null);
+                self.selected(contents && contents.length ? contents[0].file : null);
         });
     }
 

@@ -1,8 +1,8 @@
 var express = require('express');
 var app     = express();
-var http    = require('http');
-var server  = http.createServer(app);
+var http    = require('http').Server(app);
 var defaults = require('./defaults');
+var io      = require('socket.io')(http);
 
 app.use(require('body-parser').urlencoded({ extended: false }))
 
@@ -29,12 +29,14 @@ app.get('/s/:file', function(req, res) {
 app.post('/s/create', function(req, res) {
     jsdb.create(defaults.newScript()).then(function(name) {
         res.send(name);
+        io.emit('scripts-changed', {});
     }).fail(mkErrorHandler(res));
 });
 
 app.post('/s/:file', function(req, res) {
     jsdb.save(req.params.file, req.body).then(function() {
         res.send('OK');
+        io.emit('scripts-changed', {});
     }).fail(mkErrorHandler(res));
 });
 
@@ -72,5 +74,5 @@ app.use('/p/plots', express.static('plots'));
 var oneDay = 24 * 60 * 60 * 1000;
 app.use(express.static('../client', { maxAge: oneDay }));
 
-server.listen(3000);
-console.log("Please open http://localhost:%d/", server.address().port);
+http.listen(3000);
+console.log("Please open http://localhost:%d/", 3000);
