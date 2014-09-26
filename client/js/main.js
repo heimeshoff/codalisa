@@ -1,19 +1,61 @@
-var editor = ace.edit("editor");
-editor.setTheme("ace/theme/dawn");
-editor.getSession().setMode("ace/mode/javascript");
-editor.getSession().setUseSoftTabs(true);
+var canvas = new Canvas(600, 600, document.getElementById('preview'));
+var sim = new Simulation(canvas, 3, 3, {});
 
-/**
-var keyboardHandler = editor.getKeyboardHandler();
-editor.setKeyboardHandler("ace/keyboard/vim");
-editor.setKeyboardHandler(keyboardHandler);
-*/
+var mouseDrawing = new MouseDrawing();
+sim.setAgent(0, 0, mouseDrawing);
+sim.setAgent(1, 0, mouseDrawing);
+sim.setAgent(2, 0, mouseDrawing);
+sim.setAgent(0, 1, mouseDrawing);
+sim.setAgent(2, 1, mouseDrawing);
+sim.setAgent(0, 2, mouseDrawing);
+sim.setAgent(1, 2, mouseDrawing);
+sim.setAgent(2, 2, mouseDrawing);
 
 var models = {
     scripts: new Scripts(),
-    activeScript: new ActiveScript()
+    activeScript: new ActiveScript(),
+    matrix: new MatrixModel(),
+
+    useVim: ko.observable(false),
+    saving: ko.observable(false),
+
+    publish: function() {
+        this.activeScript.publish();
+        this.activeScript.setPublished();
+        this.preview();
+    },
+
+    preview: function() {
+        this.saving(true);
+        this.activeScript.save(this.scripts)
+            .then(function(obj) {
+                this.saving(false);
+                sim.setAgent(1, 1, makeAgentFromScript(obj.draft));
+            }.bind(this));
+    },
+
+    /**
+     * Make the active script occupy the given cell
+     *
+     * Is not bound, so can't use this.
+     */
+    occupy: function(cell) {
+        if (models.activeScript.file()) {
+            models.matrix.occupy(cell, models.activeScript.file());
+        }
+    },
+
+    fps: ko.observable(0)
 };
 
+var editor = initAce('editor');
+bindEditorModel(editor, models.activeScript);
+initVimPreference(editor, models.useVim);
+editor.focus();
+
+/**
+ * Handle change of selected script
+ */
 models.scripts.selected.subscribe(function(name) {
     // When the selected item changes, quickly save the current script :)
     models.activeScript.save(models.scripts, editor.getValue());
@@ -25,24 +67,23 @@ models.scripts.selected.subscribe(function(name) {
             .then(models.activeScript.set);
 });
 
-models.activeScript.script.subscribe(function(script) {
-    editor.setValue(script, -1);
-});
+models.matrix.load('default');
 
 // Save changes to server periodically
+/*
 window.setInterval(function() {
     models.activeScript.save(models.scripts, editor.getValue());
 }, 5000);
+*/
+
 
 ko.applyBindings(models);
 models.scripts.refresh();
 
 var socket = io();
 
-socket.on('scripts-changed', function(msg){
-    models.scripts.refresh();
-});
+socket.on('scripts-changed', function(msg) { models.scripts.refresh(); });
+socket.on('matrix-changed', function(ev) { models.matrix.reload(ev.changedMatrix); });
 
-editor.focus();
-
-var sim = new Simulation(new Canvas(document.getElementById('preview')), {});
+sim.onFps = models.fps;
+sim.start();

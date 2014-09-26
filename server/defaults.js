@@ -4,13 +4,16 @@ module.exports = {
     newScript: function() {
         return {title: animalonymous.randomStr(),
                 script: ['/**',
-                         ' * Describe a bit about your script here.',
+                         ' * Be kind to others and your future self: describe your script.',
                          ' *',
-                         ' * It\'ll help yourself and other people.',
+                         ' * ...',
                          ' */',
+                         '', 
+                         'function setup() {',
+                         '}',
                          '',
-                         'function tick(t) {',
-                         '',
+                         'function draw(t, cell, signals) {',
+                         '  // ...',
                          '}'].join('\n')
                }
     }

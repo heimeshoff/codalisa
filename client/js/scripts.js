@@ -30,12 +30,28 @@ var Scripts = function() {
         return $.get('/s/' + encodeURIComponent(file));
     }
 
-    self.put = function(file, title, script) {
-        return $.post('/s/' + encodeURIComponent(file), {
-                title: title,
-                script: script,
-            });
+    self.put = function(file, obj) {
+        assert(obj.title !== undefined && obj.script !== undefined && obj.draft !== undefined, 'put argument must be a script object');
+        return $.post('/s/' + encodeURIComponent(file), obj);
     }
+}
+
+var RedirectableObservable = function(current) {
+    var ret = ko.observable(current());
+
+    var sub = current.subscribe(ret);
+    ret.subscribe(function(newValue) {
+        current(newValue);
+    });
+
+    ret.redirect = function(newUnderlying) {
+        sub.dispose();
+        current = newUnderlying;
+
+        ret(newUnderlying());
+        sub = current.subscribe(ret);
+    }
+    return ret;
 }
 
 /**
@@ -48,57 +64,94 @@ var Scripts = function() {
 var ActiveScript = function() {
     var self = this;
 
-    var originalTitle = ko.observable();
-    var originalScript = ko.observable();
+    // Data
+    var originalObj = ko.observable();
 
     self.file = ko.observable();
     self.title = ko.observable();
-    self.script = ko.observable();
+    self.published = ko.observable();  // is called 'script' on the DTO :x
+    self.draft = ko.observable();
 
-    self.disabled = ko.pureComputed(function() {
-        return !self.file();
+    var page = ko.observable('draft');
+
+    // Manipulation
+    self.script = RedirectableObservable(self.draft);  // view on the actual script
+
+    self.isDraft = ko.pureComputed(function() { return page() == 'draft'; });
+    self.isPublished = ko.pureComputed(function() { return page() == 'published'; });
+    self.isGrid = ko.pureComputed(function() { return page() == 'grid'; });
+    self.readOnly = ko.pureComputed(function() { return !self.isDraft() || !self.file(); });
+    self.setDraft = function() { page('draft'); }
+    self.setPublished = function() { page('published'); }
+    self.setGrid = function() { page('grid'); }
+    self.viewScript = ko.observable();
+
+    self.isDraft.subscribe(function(isDraft) {
+        self.script.redirect(isDraft ? self.draft : self.published);
     });
 
     self.clear = function() {
         self.file('');
         self.title('');
         self.script('');
-
-        originalTitle(self.title());
-        originalScript(self.script());
+        self.published('');
+        self.draft('');
+        self.setDraft();
     }
 
     self.set = function(scriptObj) {
+        originalObj(scriptObj);
+
         self.file(scriptObj.file);
         self.title(scriptObj.title);
-        self.script(scriptObj.script);
+        self.published(scriptObj.script);
+        self.draft(scriptObj.draft);
 
-        originalTitle(self.title());
-        originalScript(self.script());
+        self.setDraft();
     }
+
+    self.publish = function() {
+        self.published(self.draft());
+    }
+
+    self.isDirty = ko.pureComputed(function() {
+        if (!self.file()) return false;
+
+        var original = originalObj();
+        return (self.title() != original.title ||
+                self.published() != original.script ||
+                self.draft() != original.draft);
+    });
+
+    self.isUnpublished = ko.pureComputed(function() {
+        if (!self.file()) return false;
+
+        return self.published() != self.draft();
+    });
 
     /**
      * Save the given script to the server, if it has changed since last loaded
      * it.
      */
-    self.save = function(scripts, currentScript) {
-        if (!self.file()) return;
-
-        // Load current state into vars so we can update the POSTED values
-        // later on.
-        var file = self.file();
-        var title = self.title();
-
-        if (self.title() != originalTitle() || currentScript != originalScript()) {
-            console.log('saving...', editor.getValue());
-            scripts.put(file, title, currentScript).then(function() {
-                console.log('saved');
-                if (self.file() != file)
-                    // Loaded a new script in the meantime
-                    return;
-                originalTitle(title);
-                originalScript(currentScript);
-            });
+    self.save = function(scripts) {
+        var file = this.file();
+        var obj = {
+            title: self.title(),
+            script: self.published(),
+            draft: self.draft()
         }
+
+        if (!self.isDirty()) return $.Deferred().resolve(obj).promise();
+
+        console.log('saving...');
+        return scripts.put(file, obj).then(function() {
+            console.log('saved');
+            // Check if the subject changed in the meantime
+            if (file == self.file()) {
+                originalObj(obj);
+            }
+
+            return obj;
+        });
     }
 }

@@ -21,3 +21,8 @@
                        '<br>' + msg + '</div>';
     };
 }());
+
+function assert(cond, msg) {
+    if (!cond)
+        throw new Error("Assertion failure: " + msg);
+}

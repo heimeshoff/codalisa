@@ -3,6 +3,7 @@ var app     = express();
 var http    = require('http').Server(app);
 var defaults = require('./defaults');
 var io      = require('socket.io')(http);
+var _       = require('lodash');
 
 app.use(require('body-parser').urlencoded({ extended: false }))
 
@@ -12,64 +13,101 @@ var mkErrorHandler = function(res) {
     };
 };
 
-var jsdb = require('./jsdb')('../scripts');
+var jsdb = require('./jsdb');
+var script_db = jsdb.open(jsdb.Script, '../scripts');
+var matrix_db = jsdb.open(jsdb.Matrix, '../matrices');
+
+matrix_db.exists('default')
+    .then(function(exists) {
+        if (!exists) matrix_db.save('default', {
+            title: 'Default matrix',
+            width: 4,
+            height: 4,
+            agents: []
+        });
+    });
+
+//----------------------------------------------------------------------
+//  URL HANDLERS
+//
 
 app.get('/s', function(req, res) {
-    jsdb.list().then(function(files) {
+    script_db.list().then(function(files) {
         res.json(files);
-    }).fail(mkErrorHandler(res));
-});
-
-app.get('/s/:file', function(req, res) {
-    jsdb.load(req.params.file).then(function(file) {
-        res.json(file);
     }).fail(mkErrorHandler(res));
 });
 
 app.post('/s/create', function(req, res) {
-    jsdb.create(defaults.newScript()).then(function(name) {
+    script_db.create(defaults.newScript()).then(function(name) {
         res.send(name);
-        io.emit('scripts-changed', {});
+        io.emit('scripts-changed', { file: req.params.file });
+    }).fail(mkErrorHandler(res));
+});
+
+app.get('/s/:file', function(req, res) {
+    script_db.load(req.params.file).then(function(file) {
+        res.json(file);
     }).fail(mkErrorHandler(res));
 });
 
 app.post('/s/:file', function(req, res) {
-    jsdb.save(req.params.file, req.body).then(function() {
+    console.log('Saving changes to ' + req.params.file);
+    script_db.save(req.params.file, req.body).then(function() {
         res.send('OK');
-        io.emit('scripts-changed', {});
+        io.emit('scripts-changed', { file: req.params.file });
     }).fail(mkErrorHandler(res));
 });
 
-/*
-app.get('/d/databases', function(req, res) {
-    databases.list('./db').then(function(files) {
+app.get('/m', function(req, res) {
+    matrix_db.list().then(function(files) {
         res.json(files);
     }).fail(mkErrorHandler(res));
 });
 
-app.get('/d/query/:q', function(req, res) {
-    databases.query('./db/demo.db', req.params.q)
-        .then(function(out) {
-            res.json(out);
-        }).fail(mkErrorHandler(res));
+app.post('/m/create', function(req, res) {
+    matrix_db.create(defaults.newScript()).then(function(name) {
+        res.send(name);
+        io.emit('matrix-changed', { file: req.params.file });
+    }).fail(mkErrorHandler(res));
 });
 
-app.post('/p/plot', function(req, res) {
-    var db = './db/' + req.body.db;
-    var sql = req.body.sql;
-    var plot = req.body.plot;
-
-    // List of promises
-    databases.queryAll(db, sql)
-        .then(function(series) {
-            return gnuplot.renderToPNG(series, plot, 'plots');
-        }).then(function(out) {
-            res.send({ output: out.output, url: '/p/plots/' + out.png });
-        }).fail(mkErrorHandler(res));
+app.get('/m/:file', function(req, res) {
+    matrix_db.load(req.params.file).then(function(file) {
+        res.json(file);
+    }).fail(mkErrorHandler(res));
 });
 
-app.use('/p/plots', express.static('plots'));
-*/
+app.post('/m/:file/:x/:y', function(req, res) {
+    // Transactions. Woo!
+    matrix_db.load(req.params.file).then(function(matrix) {
+        var coords = { x: parseInt(req.params.x, 10), y: parseInt(req.params.y, 10) };
+        var existing = _.find(matrix.agents, coords);
+        if (!existing) matrix.agents.push(existing = coords);
+
+        return script_db.load(req.body.file).then(function(agent) {
+            existing.file = agent.file;
+            existing.title = agent.title;
+
+            return matrix;
+        });
+    }).then(function(matrix) {
+        return matrix_db.save(req.params.file, matrix);
+    }).then(function() {
+        res.send('OK');
+        io.emit('matrix-changed', { changedMatrix: req.params.file });
+    }).fail(mkErrorHandler(res));
+});
+
+app.post('/m/:file', function(req, res) {
+    console.log('Saving changes to ' + req.params.file);
+    matrix_db.save(req.params.file, req.body).then(function() {
+        res.send('OK');
+    }).fail(mkErrorHandler(res));
+});
+
+//----------------------------------------------------------------------
+//  STATIC & STARTUP
+//
 
 var oneDay = 24 * 60 * 60 * 1000;
 app.use(express.static('../client', { maxAge: oneDay }));

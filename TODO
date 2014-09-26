@@ -2,16 +2,19 @@ Slowness Park:
     - HSV colors i.s.o. RGB (nobody can work with RGB)
     - Webworkers
 
+    - ...Sandboxing...?
+
 
 - Node selection
-- Actual live preview
 - Output scaling
 - Agent sandboxing
     - Slowness detection
     - Loop detection
     - Crash detection
+    - Provide logging function
 - Example scripts
     - Do something with differentials
-- Show concurrent editing
+- Show concurrent editing, or detect conflicts, or something 
+
 
 - Presentatie met reveal.js en live demos

@@ -1,52 +1,20 @@
-var Canvas = function(canvasEl) {
+var Canvas = function(w, h, canvasEl) {
+    this.canvasEl = canvasEl;
+    canvasEl.width = w;
+    canvasEl.height = h;
+
     var context = canvasEl.getContext('2d');
 
-    this.makeBoard = function(w, h) {
+    this.width = function() { return w; }
+    this.height = function() { return h; }
+
+    this.makeBoard = function() {
         return new Board(w, h, context.createImageData(w, h));
     }
 
     this.draw = function(board) {
-    /*
-        if (context.width != board.w) context.width = board.w;
-        if (context.height != board.h) context.height = board.h;
-        */
-
         context.putImageData(board.imageData, 0, 0);
     }
-}
-
-function clip(x, lo, hi) {
-    if (x < lo) return lo;
-    if (x > hi) return hi;
-    return x;
-}
-
-
-/**
- * Color of a single pixel
- */
-function Color(r, g, b) {
-    if (isNaN(r)) throw new Error('r is NaN');
-    if (isNaN(g)) throw new Error('g is NaN');
-    if (isNaN(b)) throw new Error('b is NaN');
-
-    this.r = clip(r, 0, 255);
-    this.g = clip(g, 0, 255);
-    this.b = clip(b, 0, 255);
-}
-
-/**
- * Mix 'frac' [0..1] of the other color into this color
- */
-Color.prototype.mix = function(other, frac) {
-    if (frac === undefined) frac = 0.5;
-    frac = clip(frac, 0.0, 1.0);
-
-    var r = this.r + (other.r - this.r) * frac;
-    var g = this.g + (other.g - this.g) * frac;
-    var b = this.b + (other.b - this.b) * frac;
-
-    return new Color(r, g, b);
 }
 
 /**
@@ -64,8 +32,10 @@ var Board = function(w, h, imageData) {
     var pixels = imageData.data;
 
     var ofs = function(x, y) {
-        x = x % w;
-        y = y % h;
+        if (x < 0) x += w + w * Math.floor(-x / w);
+        if (y < 0) y += h + h * Math.floor(-y / h);
+        x = Math.floor(x) % w;
+        y = Math.floor(y) % h;
         return (y * w + x) * 4;
     }
 
@@ -98,6 +68,11 @@ var Board = function(w, h, imageData) {
     }
 }
 
+Board.prototype.copyFrom = function(other) {
+    this.imageData.data.set(new Uint8ClampedArray(other.imageData.data));
+}
+
+
 /**
  * A single agent's view on two time slices of the board,
  * t and t - 1.
@@ -117,6 +92,16 @@ var Cell = function(x0, y0, w, h, tnow, tprev) {
     }
 }
 
+/**
+ * Make an agent from a script that defines a 'setup' and a 'draw' function.
+ */
+function makeAgentFromScript(script) {
+    var src = ('(function() { "use script"; ' +
+               script +
+               '; return { setup: setup || function() { }, draw: draw || function() { } }; }());');
+    return eval(src);
+}
+
 var Agent = function() {
     this.setup = function() {
     }
@@ -125,55 +110,146 @@ var Agent = function() {
         // Don't use cell.each() here, although convenient... CPU usage will be 10x higher!
         for (var y = 0; y < cell.h; y++)
             for (var x = 0; x < cell.w; x++) {
-                var col = new Color(Math.cos(x * (t / 10000)) * 255,
-                                    Math.sin(y * x * (t / 10000)) * 255,
-                                    Math.floor(t / 10000) % 255);
-                cell.set(x, y, cell.get(x, y).mix(col, 0.7));
+                if (Math.abs(x - y) < 3) {
+                    cell.set(x, y, new Color(255 - (t * 60) % 255,
+                                             255 - (t * 70) % 255,
+                                             255 - (t * 80) % 255));
+                }
+                else {
+                    cell.set(x, y, cell.get(x, y).mix(cell.get(x + 1, y - 1)));
+                }
             }
     }
 }
 
-var Simulation = function(canvas, signals) {
-    var x_cells = 4;
-    var y_cells = 4;
+var MouseSignalGrabber = function(element) {
+    var mx = 0;
+    var my = 0;
+    var click = 0.0;
 
-    var agents = [
-                  [new Agent(), null, new Agent(), null],
-                  [null, new Agent(), null, new Agent()],
-                  [new Agent(), null, new Agent(), null],
-                  [null, new Agent(), null, new Agent()]
-                 ];
+    $(element).mousemove(function(ev) {
+        var elOfs = $(element).offset(); 
+        mx = ev.pageX - elOfs.left;
+        my = ev.pageY - elOfs.top;
+    }).mousedown(function(ev) {
+        click = ev.which;
+        ev.preventDefault();
+        ev.stopPropagation();
+    }).mouseup(function(ev) {
+        click = 0.0;
+        ev.preventDefault();
+        ev.stopPropagation();
+    });
 
-    var w = 300;
-    var h = 300;
+    this.forCell = function(x0, y0) {
+        return {
+            x: mx - x0,
+            y: my - y0,
+            click: click
+        };
+    }
+};
 
-    var cell_w = w / x_cells;
-    var cell_h = h / y_cells;
+var clearCell = function(cell) {
+    var white = new Color(255, 255, 255)
+    for (var y = 0; y < cell.h; y++) {
+        for (var x = 0; x < cell.w; x++) {
+            cell.set(x, y, white);
+        }
+    }
+};
 
-    var old = canvas.makeBoard(w, h);
-    var cur = canvas.makeBoard(w, h);
+var mixin = function(proto, mix) {
+    var o = Object.create(proto);
+    for (var k in mix) o[k] = mix[k];
+    return o;
+}
+
+var Simulation = function(canvas, x_cells, y_cells, signals) {
+    var agentCount = x_cells * y_cells;
+
+    var agents = _.range(agentCount).map(function() {
+        return {
+            initialized: false,
+            error: null,
+            agent: null,
+            x0: 0,
+            y0: 0
+        };
+    });
+
+    var cell_w = canvas.width() / x_cells;
+    var cell_h = canvas.height() / y_cells;
+
+    this.setAgent = function(i, j, agent) {
+        agents[j * x_cells + i] = {
+            agent: agent,
+            error: null,
+            initialized: false,
+            x0: i * cell_w,
+            y0: j * cell_h
+        };
+    }
+
+    var old = canvas.makeBoard();
+    var cur = canvas.makeBoard();
+
+    var mouseSignals = new MouseSignalGrabber(canvas.canvasEl);
+
+    var burnBabyBurn = false;
+
+    var frames = 0;
+    setInterval(function() {
+        if (this.onFps) this.onFps(frames);
+        frames = 0;
+    }.bind(this), 1000);
 
     var tick = function(t) {
-        t = t || Date.now();
+        t = (t || Date.now()) / 1000;
 
-        for (var j = 0; j < y_cells; j++) {
-            for (var i = 0; i < x_cells; i++) {
-                var agent = agents[j][i];
-                if (!agent) continue;
+        for (var i = 0; i < agentCount; i++) {
+            var a = agents[i];
+            if (a.error) continue;
 
-                agent.draw(t, new Cell(i * cell_w, j * cell_h, cell_w, cell_h, cur, old), signals);
+            var cell = new Cell(a.x0, a.y0, cell_w, cell_h, cur, old);
+
+            try {
+                if (!a.initialized) {
+                    a.initialized = true;
+                    clearCell(cell);
+                    if (a.agent) a.agent.setup(cell);
+                }
+
+                if (a.agent) {
+                    var cellSigs = mixin(signals, {
+                        mouse: mouseSignals.forCell(a.x0, a.y0)
+                    });
+
+                    a.agent.draw(t, cell, cellSigs);
+                }
+            } catch(e) {
+                a.error = e;
             }
         }
 
         canvas.draw(cur);
 
         old = cur;
-        cur = canvas.makeBoard(w, h);
-        // FIXME: depend resolution on time taken
+        cur = canvas.makeBoard();
+        cur.copyFrom(old);
 
-        window.requestAnimationFrame(tick);
+        // FIXME: depend resolution on time taken
+        frames++;
+
+        if (burnBabyBurn)
+            window.requestAnimationFrame(tick);
     };
 
-    //window.setInterval(tick, 200);
-    window.requestAnimationFrame(tick);
+
+    this.start = function() {
+        if (burnBabyBurn)
+            window.requestAnimationFrame(tick);
+        else
+            window.setInterval(tick, 500);
+    }
 }
