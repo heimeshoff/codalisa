@@ -1,4 +1,4 @@
-var canvas = new Canvas(600, 600, document.getElementById('preview'));
+var canvas = new Canvas(400, 300, document.getElementById('preview'));
 var sim = new Simulation(canvas, 3, 3, {});
 
 var mouseDrawing = new MouseDrawing();
@@ -84,6 +84,19 @@ var socket = io();
 
 socket.on('scripts-changed', function(msg) { models.scripts.refresh(); });
 socket.on('matrix-changed', function(ev) { models.matrix.reload(ev.changedMatrix); });
+socket.on('signals', function(signals) { sim.setSignals(signals); });
 
 sim.onFps = models.fps;
 sim.start();
+
+/**
+ * Make the canvas' actual aspect corresponding to its virtual surface aspect
+ */
+function updateCanvasSize() {
+    var canvas = $('#preview');
+    var aspect = canvas.get(0).width / canvas.get(0).height;
+
+    canvas.height(canvas.width / aspect);
+}
+updateCanvasSize();
+$(window).resize(updateCanvasSize);

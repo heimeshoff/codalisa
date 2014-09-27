@@ -13,6 +13,11 @@ module.exports = {
                          '}',
                          '',
                          'function draw(t, cell, signals) {',
+                         '  for (var y = 0; y < cell.h; y++) {',
+                         '    for (var x = 0; x < cell.w; x++) {',
+                         '      cell.set(x, y, new Color(0, 0, 0));',
+                         '    }',
+                         '  }',
                          '  // ...',
                          '}'].join('\n')
                }

@@ -31,6 +31,9 @@ var Board = function(w, h, imageData) {
     // hmm....
     var pixels = imageData.data;
 
+    this.width = function() { return w; }
+    this.height = function() { return h; }
+
     var ofs = function(x, y) {
         if (x < 0) x += w + w * Math.floor(-x / w);
         if (y < 0) y += h + h * Math.floor(-y / h);
@@ -81,14 +84,31 @@ var Cell = function(x0, y0, w, h, tnow, tprev) {
     this.w = w;
     this.h = h;
 
+    // If the old and new boards are different size, scale the indexes
+    var oldScaleX = tprev.width()  / tnow.width();
+    var oldScaleY = tprev.height() / tnow.height();
+
     this.get = function(x, y) {
-        return tprev.get(x0 + x, y0 + y);
+        return tprev.get((x0 + x) * oldScaleX, (y0 + y) * oldScaleY);
     }
 
     this.set = function(x, y, color) {
         // Check for illegal access
         if (x < 0 || y < 0 || w <= x || h <= y) return;
         tnow.set(x0 + x, y0 + y, color);
+    }
+
+    this.rect = function(x0, y0, w, h, color) {
+        var x1 = x0 + w, y1 = y0 + h;
+        for (var y = y0; y < y1; y++) {
+            for (var x = x0; x < x1; x++) {
+                this.set(x, y, color);
+            }
+        }
+    }
+
+    this.fill = function(color) {
+        this.rect(0, 0, w, h, color);
     }
 }
 
@@ -165,8 +185,10 @@ var mixin = function(proto, mix) {
     return o;
 }
 
-var Simulation = function(canvas, x_cells, y_cells, signals) {
+var Simulation = function(canvas, x_cells, y_cells) {
     var agentCount = x_cells * y_cells;
+
+    var signals = {};
 
     var agents = _.range(agentCount).map(function() {
         return {
@@ -196,13 +218,15 @@ var Simulation = function(canvas, x_cells, y_cells, signals) {
 
     var mouseSignals = new MouseSignalGrabber(canvas.canvasEl);
 
-    var burnBabyBurn = false;
+    var burnBabyBurn = true;
 
     var frames = 0;
     setInterval(function() {
         if (this.onFps) this.onFps(frames);
         frames = 0;
     }.bind(this), 1000);
+
+    this.setSignals = function(sigs) { signals = sigs; };
 
     var tick = function(t) {
         t = (t || Date.now()) / 1000;

@@ -1,9 +1,11 @@
-var express = require('express');
-var app     = express();
-var http    = require('http').Server(app);
+var express  = require('express');
+var app      = express();
+var http     = require('http').Server(app);
+var io       = require('socket.io')(http);
+var _        = require('lodash');
+
 var defaults = require('./defaults');
-var io      = require('socket.io')(http);
-var _       = require('lodash');
+var signals  = require('./signals');
 
 app.use(require('body-parser').urlencoded({ extended: false }))
 
@@ -26,6 +28,10 @@ matrix_db.exists('default')
             agents: []
         });
     });
+
+signals.start(function(signals) {
+    io.emit('signals', signals);
+});
 
 //----------------------------------------------------------------------
 //  URL HANDLERS
@@ -74,6 +80,17 @@ app.post('/m/create', function(req, res) {
 app.get('/m/:file', function(req, res) {
     matrix_db.load(req.params.file).then(function(file) {
         res.json(file);
+    }).fail(mkErrorHandler(res));
+});
+
+app.get('/m/:file/:x/:y', function(req, res) {
+    matrix_db.load(req.params.file).then(function(matrix) {
+        var coords = { x: parseInt(req.params.x, 10), y: parseInt(req.params.y, 10) };
+        var existing = _.find(matrix.agents, coords);
+        if (!existing) return coords;
+        return existing;
+    }).then(function(agent) {
+        res.json(agent);
     }).fail(mkErrorHandler(res));
 });
 

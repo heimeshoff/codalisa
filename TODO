@@ -5,9 +5,9 @@ Slowness Park:
     - ...Sandboxing...?
 
 
-- Node selection
 - Output scaling
-- Agent sandboxing
+- Signals!
+- Agent handling
     - Slowness detection
     - Loop detection
     - Crash detection
