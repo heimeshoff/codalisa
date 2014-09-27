@@ -78,9 +78,9 @@ table.matrix-table td {
 }
 
 .occupied {
-    background: #DDD;
+    background: #DDD !important;
 }
 
 .itsme {
-    background: green;
+    background: #ede !important;
 }
