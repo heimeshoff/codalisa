@@ -15,6 +15,10 @@ function Color(r, g, b) {
     if (isNaN(g)) throw new Error('g is NaN');
     if (isNaN(b)) throw new Error('b is NaN');
 
+    r = Math.floor(r);
+    g = Math.floor(g);
+    b = Math.floor(b);
+
     this.r = clip(r, 0, 255);
     this.g = clip(g, 0, 255);
     this.b = clip(b, 0, 255);
@@ -34,6 +38,21 @@ Color.prototype.mix = function(other, frac) {
     return new Color(r, g, b);
 }
 
+Color.prototype.hex = function() {
+    var hr = this.r.toString(16);
+    var hg = this.g.toString(16);
+    var hb = this.b.toString(16);
+
+    if (hr.length < 2) hr = '0' + hr;
+    if (hg.length < 2) hg = '0' + hg;
+    if (hb.length < 2) hb = '0' + hb;
+
+    return '#' + hr + hg + hb;
+}
+
+Color.prototype.avg = function() {
+    return (this.r + this.g + this.b) / 3;
+}
 
 var dist = function(x, y, x0, y0) {
     var dx = x - x0;

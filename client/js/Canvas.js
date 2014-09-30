@@ -123,7 +123,7 @@ function makeAgentFromScript(script) {
 }
 
 var Agent = function() {
-    this.setup = function() {
+    this.setup = function(t, cell) {
     }
 
     this.draw = function(t, cell, signals) {
@@ -218,8 +218,6 @@ var Simulation = function(canvas, x_cells, y_cells) {
 
     var mouseSignals = new MouseSignalGrabber(canvas.canvasEl);
 
-    var burnBabyBurn = true;
-
     var frames = 0;
     setInterval(function() {
         if (this.onFps) this.onFps(frames);
@@ -229,8 +227,6 @@ var Simulation = function(canvas, x_cells, y_cells) {
     this.setSignals = function(sigs) { signals = sigs; };
 
     var tick = function(t) {
-        t = (t || Date.now()) / 1000;
-
         for (var i = 0; i < agentCount; i++) {
             var a = agents[i];
             if (a.error) continue;
@@ -241,7 +237,7 @@ var Simulation = function(canvas, x_cells, y_cells) {
                 if (!a.initialized) {
                     a.initialized = true;
                     clearCell(cell);
-                    if (a.agent) a.agent.setup(cell);
+                    if (a.agent) a.agent.setup(t, cell);
                 }
 
                 if (a.agent) {
@@ -252,6 +248,7 @@ var Simulation = function(canvas, x_cells, y_cells) {
                     a.agent.draw(t, cell, cellSigs);
                 }
             } catch(e) {
+                console.log(e);
                 a.error = e;
             }
         }
@@ -264,16 +261,55 @@ var Simulation = function(canvas, x_cells, y_cells) {
 
         // FIXME: depend resolution on time taken
         frames++;
-
-        if (burnBabyBurn)
-            window.requestAnimationFrame(tick);
     };
 
-
     this.start = function() {
-        if (burnBabyBurn)
-            window.requestAnimationFrame(tick);
-        else
-            window.setInterval(tick, 500);
+        SimRunner.start(tick);
     }
+
+    this.stop = function() {
+        SimRunner.stop();
+    };
 }
+
+SimRunner = (function() {
+    var burnBabyBurn = true;
+
+    var currentSim;
+    var running = false;
+    var timer;
+    var ms;
+
+    var tick = function(t) {
+        t = (t || Date.now()) / 1000;
+        if (currentSim) currentSim(t);
+
+        if (running && burnBabyBurn)
+            window.requestAnimationFrame(tick);
+    }
+
+    return {
+        setFps: function(fps) {
+            burnBabyBurn = fps == -1;
+            ms = 1000 / fps;
+        },
+        start: function(sim) {
+            currentSim = sim;
+
+            if (running) return;
+            running = true;
+
+            if (burnBabyBurn)
+                window.requestAnimationFrame(tick);
+            else
+                timer = window.setInterval(tick, ms);
+        },
+        stop: function() {
+            if (!running) return;
+            running = false;
+
+            if (!burnBabyBurn) 
+                window.clearInterval(timer);
+        }
+    };
+}());

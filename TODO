@@ -1,20 +1,21 @@
+- Viewer
+- Show concurrent editing, or detect conflicts, or something 
+- Agent error reporting
+- Write dox
+
 Slowness Park:
     - HSV colors i.s.o. RGB (nobody can work with RGB)
     - Webworkers
 
     - ...Sandboxing...?
 
-
-- Output scaling
-- Signals!
 - Agent handling
     - Slowness detection
     - Loop detection
     - Crash detection
     - Provide logging function
+
 - Example scripts
     - Do something with differentials
-- Show concurrent editing, or detect conflicts, or something 
-
 
 - Presentatie met reveal.js en live demos
