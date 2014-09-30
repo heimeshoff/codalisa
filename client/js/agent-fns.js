@@ -24,6 +24,10 @@ function Color(r, g, b) {
     this.b = clip(b, 0, 255);
 }
 
+Color.grey = function(a) {
+    return new Color(a, a, a);
+}
+
 /**
  * Mix 'frac' [0..1] of the other color into this color
  */
@@ -34,6 +38,42 @@ Color.prototype.mix = function(other, frac) {
     var r = this.r + (other.r - this.r) * frac;
     var g = this.g + (other.g - this.g) * frac;
     var b = this.b + (other.b - this.b) * frac;
+
+    return new Color(r, g, b);
+}
+
+Color.prototype.add = function(other, frac) {
+    if (frac === undefined) frac = 1;
+
+    var r = this.r + other.r * frac;
+    var g = this.g + other.g * frac;
+    var b = this.b + other.b * frac;
+
+    return new Color(r, g, b);
+}
+
+Color.prototype.sub = function(other, frac) {
+    if (frac === undefined) frac = 1;
+
+    var r = this.r - other.r * frac;
+    var g = this.g - other.g * frac;
+    var b = this.b - other.b * frac;
+
+    return new Color(r, g, b);
+}
+
+Color.prototype.scale = function(scale) {
+    var r = this.r * scale;
+    var g = this.g * scale;
+    var b = this.b * scale;
+
+    return new Color(r, g, b);
+}
+
+Color.prototype.inv = function() {
+    var r = 255 - this.r;
+    var g = 255 - this.g;
+    var b = 255 - this.b;
 
     return new Color(r, g, b);
 }

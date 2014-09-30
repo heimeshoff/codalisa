@@ -351,8 +351,10 @@ function draw(t, cell) {
   for (var y = 0; y < cell.h; y++) {
     for (var x = 0; x < cell.w; x++) {
       var above = cell.get(x, -y-1)
+      var shine = Color.grey(150 + Math.sqrt(y) * 25);
       var mixed = above.mix(white, y * 1.5 / cell.h);
-      cell.set(x, y, mixed);
+
+      cell.set(x, y, shine.sub(mixed.inv()));
     }
   }
 }
@@ -370,7 +372,9 @@ var mirror = {
         for (var y = 0; y < cell.h; y++) {
             for (var x = 0; x < cell.w; x++) {
                 var above = cell.get(x, -y-1)
-                cell.set(x, y, above.mix(white, y * 1.5 / cell.h));
+                var shine = Color.grey(150 + Math.sqrt(y) * 25);
+                var mixed = above.mix(white, y * 1.5 / cell.h);
+                cell.set(x, y, shine.sub(mixed.inv()));
             }
         }
     }
