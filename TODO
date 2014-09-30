@@ -1,7 +1,8 @@
 - Viewer
 - Show concurrent editing, or detect conflicts, or something 
 - Agent error reporting
-- Write dox
+
+
 
 Slowness Park:
     - HSV colors i.s.o. RGB (nobody can work with RGB)
@@ -17,5 +18,3 @@ Slowness Park:
 
 - Example scripts
     - Do something with differentials
-
-- Presentatie met reveal.js en live demos
