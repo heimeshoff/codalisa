@@ -188,8 +188,6 @@ var mixin = function(proto, mix) {
 var Simulation = function(canvas, x_cells, y_cells) {
     var agentCount = x_cells * y_cells;
 
-    var signals = {};
-
     var agents = _.range(agentCount).map(function() {
         return {
             initialized: false,
@@ -224,9 +222,7 @@ var Simulation = function(canvas, x_cells, y_cells) {
         frames = 0;
     }.bind(this), 1000);
 
-    this.setSignals = function(sigs) { signals = sigs; };
-
-    var tick = function(t) {
+    var tick = function(t, signals) {
         for (var i = 0; i < agentCount; i++) {
             var a = agents[i];
             if (a.error) continue;
@@ -272,7 +268,7 @@ var Simulation = function(canvas, x_cells, y_cells) {
     };
 }
 
-SimRunner = (function() {
+var SimRunner = (function() {
     var burnBabyBurn = true;
 
     var currentSim;
@@ -280,9 +276,11 @@ SimRunner = (function() {
     var timer;
     var ms;
 
+    var signals = {};
+
     var tick = function(t) {
         t = (t || Date.now()) / 1000;
-        if (currentSim) currentSim(t);
+        if (currentSim) currentSim(t, signals);
 
         if (running && burnBabyBurn)
             window.requestAnimationFrame(tick);
@@ -310,6 +308,9 @@ SimRunner = (function() {
 
             if (!burnBabyBurn) 
                 window.clearInterval(timer);
+        },
+        setSignals: function(sigs) {
+            signals = sigs;
         }
     };
 }());

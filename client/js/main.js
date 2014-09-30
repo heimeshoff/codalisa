@@ -84,7 +84,7 @@ var socket = io();
 
 socket.on('scripts-changed', function(msg) { models.scripts.refresh(); });
 socket.on('matrix-changed', function(ev) { models.matrix.reload(ev.changedMatrix); });
-socket.on('signals', function(signals) { sim.setSignals(signals); });
+socket.on('signals', function(signals) { SimRunner.setSignals(signals); });
 
 sim.onFps = models.fps;
 sim.start();

@@ -76,6 +76,10 @@ cells.
   `0..1`.
 - `color.avg()`, return the average of all R, G, B fields (interpret as
   grayscale).
+- `color.inv()`, invert the color.
+- `color.scale(a)`, scale the color with the given factor (multiply all
+  components with `a`).
+- `color.add(other)`, `color.sub(other)`, add or subtract other color.
 
 Note: You *can* try to work with HSV colors, but I've found that doing that for
 every pixel becomes *waaaaay* too slow. So don't do that :).
