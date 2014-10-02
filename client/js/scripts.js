@@ -154,6 +154,7 @@ var ActiveScript = function() {
         return scripts.put(file, obj).then(function(result) {
             if (result == 'OK') {
                 console.log('saved');
+                self.version(obj.version + 1); // This is nasty, but the easiest way to do it for now
                 // Check if the subject changed in the meantime
                 if (file == self.file()) {
                     originalObj(obj);

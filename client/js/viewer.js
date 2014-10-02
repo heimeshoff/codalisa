@@ -10,6 +10,7 @@ function loadAndAssign(agentNames, assignments) {
                 _(assignments).filter(function(ass) {
                     return ass.file == script.file;
                 }).each(function(ass) {
+                    console.log('Putting agent', script.file, 'in', ass.x, ass.y);
                     var agent = makeAgentFromScript(script.script);
                     sim.setAgent(ass.x, ass.y, agent);
                 });
