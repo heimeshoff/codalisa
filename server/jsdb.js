@@ -105,7 +105,7 @@ module.exports = {
 
                 fs.readFile(dir + '/' + name, function(err, content) {
                     if (err) {
-                        deferred.resolve({});
+                        schema.unpickle({}).then(deferred.resolve);
                     }
                     else {
                         var obj = JSON.parse(content);

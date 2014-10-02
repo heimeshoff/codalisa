@@ -225,6 +225,8 @@ var Simulation = function(canvas, x_cells, y_cells) {
         frames = 0;
     }.bind(this), 1000);
 
+    var deadColor = new Color(200, 0, 0);
+
     var tick = function(t, signals) {
         for (var i = 0; i < agentCount; i++) {
             var a = agents[i];
@@ -249,6 +251,7 @@ var Simulation = function(canvas, x_cells, y_cells) {
             } catch(e) {
                 console.log(e);
                 a.error = e;
+                cell.fill(deadColor);
             }
         }
 

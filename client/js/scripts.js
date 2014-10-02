@@ -89,6 +89,7 @@ var ActiveScript = function() {
     self.setPublished = function() { page('published'); }
     self.setGrid = function() { page('grid'); }
     self.viewScript = ko.observable();
+    self.version = ko.observable();
 
     self.isDraft.subscribe(function(isDraft) {
         self.script.redirect(isDraft ? self.draft : self.published);
@@ -110,6 +111,7 @@ var ActiveScript = function() {
         self.title(scriptObj.title);
         self.published(scriptObj.script);
         self.draft(scriptObj.draft);
+        self.version(scriptObj.version);
 
         self.setDraft();
     }
@@ -142,20 +144,24 @@ var ActiveScript = function() {
         var obj = {
             title: self.title(),
             script: self.published(),
-            draft: self.draft()
+            draft: self.draft(),
+            version: self.version()
         }
 
         if (!self.isDirty()) return $.Deferred().resolve(obj).promise();
 
         console.log('saving...');
-        return scripts.put(file, obj).then(function() {
-            console.log('saved');
-            // Check if the subject changed in the meantime
-            if (file == self.file()) {
-                originalObj(obj);
-            }
+        return scripts.put(file, obj).then(function(result) {
+            if (result == 'OK') {
+                console.log('saved');
+                // Check if the subject changed in the meantime
+                if (file == self.file()) {
+                    originalObj(obj);
+                }
 
-            return obj;
+                return obj;
+            }
+            else return $.Deferred().reject(result).promise();
         });
     }
 }

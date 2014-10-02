@@ -32,7 +32,10 @@ var models = {
                 this.saving(false);
                 sim.setAgent(1, 1, makeAgentFromScript(obj.draft));
                 return obj;
-            }.bind(this));
+            }.bind(this))
+            .fail(function(err) {
+                alert(err);
+            });
     },
 
     /**
@@ -60,6 +63,10 @@ editor.focus();
 models.scripts.selected.subscribe(function(name) {
     // When the selected item changes, quickly save the current script :)
     models.activeScript.save(models.scripts, editor.getValue());
+    if (window.history.replaceState) {
+        window.history.replaceState(null, null, '#' + name);
+    }
+
     if (!name)
         models.activeScript.clear();
     else 
@@ -67,6 +74,8 @@ models.scripts.selected.subscribe(function(name) {
             .get(name)
             .then(models.activeScript.set);
 });
+
+models.scripts.selected(window.location.hash.substr(1));
 
 models.matrix.load('default');
 
