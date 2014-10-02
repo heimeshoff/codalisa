@@ -59,3 +59,13 @@ function updateCanvasSize() {
 }
 $(window).resize(updateCanvasSize);
 updateCanvasSize();
+
+$('#fullscreen-button').click(function() {
+    if (screenfull.enabled) {
+        screenfull.request();
+    }
+});
+
+document.addEventListener(screenfull.raw.fullscreenchange, function () {
+    $('#fullscreen-button').toggle(!screenfull.isFullscreen);
+});

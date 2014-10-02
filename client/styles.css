@@ -90,3 +90,9 @@ table.matrix-table td {
     background: #ede !important;
 
 }
+
+#fullscreen-button {
+    position: absolute;
+    left: 10px;
+    top: 10px;
+}
