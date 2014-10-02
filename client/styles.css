@@ -4,6 +4,11 @@ html {
     -webkit-font-smoothing: antialiased;
 }
 
+#surface {
+    display: block;
+    margin: 0 auto;
+}
+
 .script-list h4 {
     height: 50px;
     line-height: 60px;
@@ -83,4 +88,5 @@ table.matrix-table td {
 
 .itsme {
     background: #ede !important;
+
 }

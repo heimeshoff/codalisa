@@ -1,3 +1,7 @@
+var loadScript = function(file) {
+    return $.get('/s/' + encodeURIComponent(file));
+}
+
 var Scripts = function() {
     var self = this;
     self.scripts = ko.observableArray();

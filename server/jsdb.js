@@ -10,11 +10,13 @@ module.exports = {
     Script: {
         pickle: function(obj) {
             if (!obj.script) return Q.reject(new Error('No script'));
-            if (!obj.title) title = 'Nameless script';
+            if (!obj.version) return Q.reject(new Error('Give version'));
+            if (!obj.title) obj.title = 'Nameless script';
             return Q.resolve(obj);
         },
         unpickle: function(obj) {
             if (!obj.draft) obj.draft = obj.script;
+            if (!obj.version) obj.version = 1;
             return Q.resolve(obj);
         },
         dir: function(obj) {
@@ -94,6 +96,25 @@ module.exports = {
                         obj.file = name;
                         return schema.unpickle(obj);
                     });
+            },
+
+            loadOrEmpty: function(name) {
+                if (!isVisible(name)) return Q.reject(new Error('Invalid file'));
+
+                var deferred = Q.defer();
+
+                fs.readFile(dir + '/' + name, function(err, content) {
+                    if (err) {
+                        deferred.resolve({});
+                    }
+                    else {
+                        var obj = JSON.parse(content);
+                        obj.file = name;
+                        deferred.resolve(schema.unpickle(obj));
+                    }
+                });
+
+                return deferred.promise;
             },
 
             /**

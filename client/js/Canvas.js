@@ -116,7 +116,7 @@ var Cell = function(x0, y0, w, h, tnow, tprev) {
  * Make an agent from a script that defines a 'setup' and a 'draw' function.
  */
 function makeAgentFromScript(script) {
-    var src = ('(function() { "use script"; ' +
+    var src = ('(function() { "use strict"; ' +
                script +
                '; return { setup: setup || function() { }, draw: draw || function() { } }; }());');
     return eval(src);
@@ -149,8 +149,11 @@ var MouseSignalGrabber = function(element) {
 
     $(element).mousemove(function(ev) {
         var elOfs = $(element).offset(); 
-        mx = ev.pageX - elOfs.left;
-        my = ev.pageY - elOfs.top;
+        var Xaspect = element.width ? element.width / $(element).width() : 1;
+        var Yaspect = element.height ? element.height / $(element).height() : 1;
+
+        mx = (ev.pageX - elOfs.left) * Xaspect;
+        my = (ev.pageY - elOfs.top) * Yaspect;
     }).mousedown(function(ev) {
         click = ev.which;
         ev.preventDefault();
@@ -232,7 +235,7 @@ var Simulation = function(canvas, x_cells, y_cells) {
             try {
                 if (!a.initialized) {
                     a.initialized = true;
-                    clearCell(cell);
+                    cell.fill(new Color(255, 255, 255));
                     if (a.agent) a.agent.setup(t, cell);
                 }
 

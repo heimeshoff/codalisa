@@ -58,10 +58,18 @@ app.get('/s/:file', function(req, res) {
 
 app.post('/s/:file', function(req, res) {
     console.log('Saving changes to ' + req.params.file);
-    script_db.save(req.params.file, req.body).then(function() {
-        res.send('OK');
-        io.emit('scripts-changed', { file: req.params.file });
-    }).fail(mkErrorHandler(res));
+
+    script_db.loadOrEmpty(req.params.file).then(function(obj) {
+        script_db.save(req.params.file, req.body).then(function() {
+            res.send('OK');
+            io.emit('scripts-changed', { file: req.params.file });
+            
+            if (obj.script != req.body.script) {
+                console.log('Script published!');
+                io.emit('script-published', { file: req.params.file });
+            }
+        }).fail(mkErrorHandler(res));
+    });
 });
 
 app.get('/m', function(req, res) {
@@ -104,6 +112,8 @@ app.post('/m/:file/:x/:y', function(req, res) {
         return script_db.load(req.body.file).then(function(agent) {
             existing.file = agent.file;
             existing.title = agent.title;
+
+            io.emit('cell-changed', existing);
 
             return matrix;
         });

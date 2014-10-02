@@ -1,4 +1,4 @@
-var canvas = new Canvas(400, 300, document.getElementById('preview'));
+var canvas = new Canvas(300, 300, document.getElementById('preview'));
 var sim = new Simulation(canvas, 3, 3, {});
 
 var mouseDrawing = new MouseDrawing();
@@ -27,10 +27,11 @@ var models = {
 
     preview: function() {
         this.saving(true);
-        this.activeScript.save(this.scripts)
+        return this.activeScript.save(this.scripts)
             .then(function(obj) {
                 this.saving(false);
                 sim.setAgent(1, 1, makeAgentFromScript(obj.draft));
+                return obj;
             }.bind(this));
     },
 
