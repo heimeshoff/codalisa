@@ -118,7 +118,7 @@ var Cell = function(x0, y0, w, h, tnow, tprev) {
 function makeAgentFromScript(script) {
     var src = ('(function() { "use strict"; ' +
                script +
-               '; return { setup: setup || function() { }, draw: draw || function() { } }; }());');
+               '; return { setup: typeof setup != "undefined" ? setup : function() { }, draw: typeof draw != "undefined" ? draw : function() { } }; }());');
     return eval(src);
 }
 
