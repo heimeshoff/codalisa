@@ -188,6 +188,20 @@ var mixin = function(proto, mix) {
     return o;
 }
 
+var deadCross = function(cell) {
+    var deadColor = new Color(200, 0, 0);
+    var black = new Color(0, 0, 0);
+
+    for (var y = 0; y < cell.h; y++) {
+        for (var x = 0; x < cell.w; x++) {
+            if (Math.abs(x / cell.w - y / cell.h) < 0.05 || Math.abs(1 - x / cell.w - y / cell.h) < 0.05)
+                cell.set(x, y, black);
+            else
+                cell.set(x, y, deadColor);
+        }
+    }
+}
+
 var Simulation = function(canvas, x_cells, y_cells) {
     var agentCount = x_cells * y_cells;
 
@@ -225,8 +239,6 @@ var Simulation = function(canvas, x_cells, y_cells) {
         frames = 0;
     }.bind(this), 1000);
 
-    var deadColor = new Color(200, 0, 0);
-
     var tick = function(t, signals) {
         for (var i = 0; i < agentCount; i++) {
             var a = agents[i];
@@ -250,8 +262,8 @@ var Simulation = function(canvas, x_cells, y_cells) {
                 }
             } catch(e) {
                 console.log(e);
+                deadCross(cell);
                 a.error = e;
-                cell.fill(deadColor);
             }
         }
 
