@@ -52,6 +52,7 @@ app.post('/s/create', function(req, res) {
 
 app.get('/s/:file', function(req, res) {
     script_db.load(req.params.file).then(function(file) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
         res.json(file);
     }).fail(mkErrorHandler(res));
 });

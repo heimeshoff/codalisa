@@ -9,6 +9,10 @@ html {
     margin: 0 auto;
 }
 
+.list {
+    overflow: auto;
+}
+
 .script-list h4 {
     height: 50px;
     line-height: 60px;

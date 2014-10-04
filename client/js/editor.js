@@ -5,7 +5,7 @@ var addErrorToLog = function(script, error) {
         models.activeScript.errors.push(error);
 }
 
-var sim = new Simulation(canvas, 3, 3, addErrorToLog);
+var sim = new Simulation(canvas, 3, 3, addErrorToLog, true);
 
 var mouseDrawing = new MouseDrawing();
 sim.setAgent(0, 0, mouseDrawing);
@@ -27,7 +27,6 @@ var models = {
 
     publish: function() {
         this.activeScript.publish();
-        this.activeScript.setPublished();
         this.preview();
     },
 

@@ -204,7 +204,7 @@ var deadCross = function(cell) {
     }
 }
 
-var Simulation = function(canvas, x_cells, y_cells, errorSink) {
+var Simulation = function(canvas, x_cells, y_cells, errorSink, rethrow) {
     var agentCount = x_cells * y_cells;
 
     var agents = _.range(agentCount).map(function() {
@@ -260,7 +260,8 @@ var Simulation = function(canvas, x_cells, y_cells, errorSink) {
                 console.log(e);
                 deadCross(cell);
                 a.error = e;
-                if (errorSink && a.agent.file) errorSink(a.agent.file, e);
+                if (errorSink && a.agent.file) errorSink(a.agent.file, JSON.stringify(e) + ' ' + e.toString());
+                if (rethrow) throw e;
             }
         }
 
