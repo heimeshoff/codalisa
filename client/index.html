@@ -26,7 +26,7 @@
                         <input type="text" placeholder="My Script..." data-bind="value: title, disable: readOnly"/>
 
                         <ul class="button-group">
-                            <li><a href="#" class="active secondary button" data-bind="css: { active: isDraft }, click: setDraft">
+                            <li><a href="#" class="secondary button" data-bind="css: { active: isDraft }, click: setDraft">
                                 Draft
                                 <span class="round label" title="Script has unsaved changes" data-bind="visible: isDirty()">chg</span>
                                 <span class="success round label" title="Script has unpublished changes" data-bind="visible: isUnpublished() && !isDirty()">pub</span>
@@ -65,19 +65,29 @@
             </div>
 
             <div class="h-rest with-content">
-                <div class="v-div">
+                <div class="v-div" data-bind="with: activeScript">
                     <div class="v-top">
                         <ul class="button-group">
-                            <li><a href="#" class="active secondary button">Preview</a></li>
-                            <li><a href="#" class="secondary button">
+                            <li><a href="#" class="secondary button" data-bind="css: { active: isPreview }, click: setPreview">Preview</a></li>
+                            <li><a href="#" class="secondary button" data-bind="css: { active: isErrors }, click: setErrors">
                                 Errors
-                                <span class="round alert label" title="Script has errors">86</span>
+                                <span class="round alert label" title="Script produced errors" data-bind="visible: errors().length, text: errors().length"></span>
                             </a></li>
                         </ul>
                     </div>
-                    <div class="v-rest">
+                    <div class="v-rest" data-bind="visible: isPreview">
                         <canvas id="preview" style="width: 100%;"></canvas>
-                        <div><small><span data-bind="text: fps"></span> fps</small></div>
+                        <div><small><span data-bind="text: $root.fps"></span> fps</small></div>
+                    </div>
+                    <div class="v-rest" data-bind="visible: isErrors">
+                        <table>
+                            <thead>
+                                <tr><th>Error</th></tr>
+                            </thead>
+                            <tbody data-bind="foreach: errors">
+                                <tr><td data-bind="text: $data"></td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>

@@ -115,11 +115,13 @@ var Cell = function(x0, y0, w, h, tnow, tprev) {
 /**
  * Make an agent from a script that defines a 'setup' and a 'draw' function.
  */
-function makeAgentFromScript(script) {
+function makeAgentFromScript(script, filename) {
     var src = ('(function() { "use strict"; ' +
                script +
                '; return { setup: typeof setup != "undefined" ? setup : function() { }, draw: typeof draw != "undefined" ? draw : function() { } }; }());');
-    return eval(src);
+    var obj = eval(src);
+    obj.file = filename;
+    return obj;
 }
 
 var Agent = function() {
@@ -202,7 +204,7 @@ var deadCross = function(cell) {
     }
 }
 
-var Simulation = function(canvas, x_cells, y_cells) {
+var Simulation = function(canvas, x_cells, y_cells, errorSink) {
     var agentCount = x_cells * y_cells;
 
     var agents = _.range(agentCount).map(function() {
@@ -233,12 +235,6 @@ var Simulation = function(canvas, x_cells, y_cells) {
 
     var mouseSignals = new MouseSignalGrabber(canvas.canvasEl);
 
-    var frames = 0;
-    setInterval(function() {
-        if (this.onFps) this.onFps(frames);
-        frames = 0;
-    }.bind(this), 1000);
-
     var tick = function(t, signals) {
         for (var i = 0; i < agentCount; i++) {
             var a = agents[i];
@@ -264,6 +260,8 @@ var Simulation = function(canvas, x_cells, y_cells) {
                 console.log(e);
                 deadCross(cell);
                 a.error = e;
+                console.log(a.agent);
+                if (errorSink && a.agent.file) errorSink(a.agent.file, e);
             }
         }
 
@@ -272,9 +270,6 @@ var Simulation = function(canvas, x_cells, y_cells) {
         old = cur;
         cur = canvas.makeBoard();
         cur.copyFrom(old);
-
-        // FIXME: depend resolution on time taken
-        frames++;
     };
 
     this.start = function() {
@@ -296,15 +291,23 @@ var SimRunner = (function() {
 
     var signals = {};
 
+    var frames = 0;
+    setInterval(function() {
+        if (inst.onFps) inst.onFps(frames);
+        frames = 0;
+    }.bind(this), 1000);
+
     var tick = function(t) {
         t = (t || Date.now()) / 1000;
         if (currentSim) currentSim(t, signals);
 
         if (running && burnBabyBurn)
             window.requestAnimationFrame(tick);
+
+        frames++;
     }
 
-    return {
+    return (inst = {
         setFps: function(fps) {
             burnBabyBurn = fps == -1;
             ms = 1000 / fps;
@@ -330,5 +333,5 @@ var SimRunner = (function() {
         setSignals: function(sigs) {
             signals = sigs;
         }
-    };
+    });
 }());

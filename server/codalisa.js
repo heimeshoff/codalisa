@@ -79,6 +79,16 @@ app.post('/s/:file', function(req, res) {
     }).fail(mkErrorHandler(res));
 });
 
+app.post('/s/:file/error', function(req, res) {
+    console.log('Reporting error', req.body.error);
+    script_db.load(req.params.file).then(function(script) {
+        script.errors.push(req.body.error);
+        return script_db.save(req.params.file, script);
+    }).then(function(script) {
+        io.emit('script-error', { file: req.params.file, error: req.body.error });
+    }).fail(mkErrorHandler(res));
+});
+
 app.get('/m', function(req, res) {
     matrix_db.list().then(function(files) {
         res.json(files);

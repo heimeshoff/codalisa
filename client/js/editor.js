@@ -1,5 +1,11 @@
 var canvas = new Canvas(300, 300, document.getElementById('preview'));
-var sim = new Simulation(canvas, 3, 3, {});
+
+var addErrorToLog = function(script, error) {
+    if (script == models.activeScript.file())
+        models.activeScript.errors.push(error);
+}
+
+var sim = new Simulation(canvas, 3, 3, addErrorToLog);
 
 var mouseDrawing = new MouseDrawing();
 sim.setAgent(0, 0, mouseDrawing);
@@ -27,10 +33,12 @@ var models = {
 
     preview: function() {
         this.saving(true);
+        var f = this.activeScript.file();
         return this.activeScript.save(this.scripts)
             .then(function(obj) {
                 this.saving(false);
-                sim.setAgent(1, 1, makeAgentFromScript(obj.draft));
+                var a = makeAgentFromScript(obj.draft, f);
+                sim.setAgent(1, 1, a);
                 return obj;
             }.bind(this))
             .fail(function(err) {
@@ -95,8 +103,9 @@ var socket = io();
 socket.on('scripts-changed', function(msg) { models.scripts.refresh(); });
 socket.on('matrix-changed', function(ev) { models.matrix.reload(ev.changedMatrix); });
 socket.on('signals', function(signals) { SimRunner.setSignals(signals); });
+socket.on('script-error', function(err) { addErrorToLog(err.file, err.error); });
 
-sim.onFps = models.fps;
+SimRunner.onFps = models.fps;
 sim.start();
 
 /**

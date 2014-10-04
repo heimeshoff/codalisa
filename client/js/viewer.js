@@ -11,7 +11,7 @@ function loadAndAssign(agentNames, assignments) {
                     return ass.file == script.file;
                 }).each(function(ass) {
                     console.log('Putting agent', script.file, 'in', ass.x, ass.y);
-                    var agent = makeAgentFromScript(script.script);
+                    var agent = makeAgentFromScript(script.script, script.file);
                     sim.setAgent(ass.x, ass.y, agent);
                 });
             } catch (e) {
@@ -23,7 +23,7 @@ function loadAndAssign(agentNames, assignments) {
 
 function showMatrix(matrixName) {
     matrix.load(matrixName).then(function() {
-        sim = new Simulation(canvas, matrix.width(), matrix.height());
+        sim = new Simulation(canvas, matrix.width(), matrix.height(), postError);
 
         loadAndAssign(_(matrix.agents()).pluck('file').unique().value(), matrix.agents());
 
@@ -42,6 +42,10 @@ socket.on('cell-changed', function(cell) {
     loadAndAssign([cell.file], [cell]);
 });
 socket.on('signals', function(signals) { SimRunner.setSignals(signals); });
+
+SimRunner.onFps = function(fps) {
+    $('#viewer-fps').text('fps: ' + fps);
+}
 
 /**
  * Make the canvas' actual aspect corresponding to its virtual surface aspect

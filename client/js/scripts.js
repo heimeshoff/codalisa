@@ -2,6 +2,10 @@ var loadScript = function(file) {
     return $.get('/s/' + encodeURIComponent(file));
 }
 
+var postError = function(file, error) {
+    return $.post('/s/' + encodeURIComponent(file) + '/error', { error: error.toString() });
+}
+
 var Scripts = function() {
     var self = this;
     self.scripts = ko.observableArray();
@@ -75,8 +79,10 @@ var ActiveScript = function() {
     self.title = ko.observable();
     self.published = ko.observable();  // is called 'script' on the DTO :x
     self.draft = ko.observable();
+    self.errors = ko.observableArray();
 
     var page = ko.observable('draft');
+    var page2 = ko.observable('preview');
 
     // Manipulation
     self.script = RedirectableObservable(self.draft);  // view on the actual script
@@ -90,6 +96,11 @@ var ActiveScript = function() {
     self.setGrid = function() { page('grid'); }
     self.viewScript = ko.observable();
     self.version = ko.observable();
+
+    self.isPreview = ko.pureComputed(function() { return page2() == 'preview'; });
+    self.isErrors = ko.pureComputed(function() { return page2() == 'errors'; });
+    self.setPreview = function() { page2('preview'); };
+    self.setErrors = function() { page2('errors'); };
 
     self.isDraft.subscribe(function(isDraft) {
         self.script.redirect(isDraft ? self.draft : self.published);
@@ -112,6 +123,7 @@ var ActiveScript = function() {
         self.published(scriptObj.script);
         self.draft(scriptObj.draft);
         self.version(scriptObj.version);
+        self.errors(scriptObj.errors);
 
         self.setDraft();
     }
@@ -158,6 +170,7 @@ var ActiveScript = function() {
                 // Check if the subject changed in the meantime
                 if (file == self.file()) {
                     originalObj(obj);
+                    self.errors([]);
                 }
 
                 return obj;

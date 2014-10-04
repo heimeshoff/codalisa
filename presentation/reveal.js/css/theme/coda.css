@@ -139,6 +139,12 @@ section .overlay {
   -o-transition: all .2s linear;
   transition: all .2s linear; }
 
+.abbrev strong {
+    display: inline-block;
+    width: 0.8em;
+    text-align: center;
+}
+
 .reveal a:hover img {
   background: rgba(255, 255, 255, 0.2);
   border-color: #268bd2;

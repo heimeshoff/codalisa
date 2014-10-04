@@ -17,6 +17,7 @@ module.exports = {
         unpickle: function(obj) {
             if (!obj.draft) obj.draft = obj.script;
             if (!obj.version) obj.version = 1;
+            if (obj.errors === undefined) obj.errors = [];
             return Q.resolve(obj);
         },
         dir: function(obj) {
