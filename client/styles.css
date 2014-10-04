@@ -83,11 +83,11 @@ table.matrix-table td {
 }
 
 .occupied {
-    background: #DDD !important;
+    background: #ededed !important;
 }
 
 .itsme {
-    background: #ede !important;
+    background: #cfc !important;
 
 }
 

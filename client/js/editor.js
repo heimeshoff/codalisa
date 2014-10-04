@@ -33,6 +33,7 @@ var models = {
 
     preview: function() {
         this.saving(true);
+        this.activeScript.setPreview();
         var f = this.activeScript.file();
         return this.activeScript.save(this.scripts)
             .then(function(obj) {

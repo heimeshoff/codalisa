@@ -50,7 +50,7 @@
                                     <td data-bind="css: { itsme: file == $root.activeScript.file(), occupied: file }">
                                         <span data-bind="visible: !file">(nothing)</span>
                                         <a href="#" data-bind="click: $root.scripts.select, text: title"></a>
-                                        <button class="success tiny" data-bind="click: $root.occupy">put script here</button>
+                                        <button class="success tiny" data-bind="click: $root.occupy, visible: file != $root.activeScript.file()">put script here</button>
                                     </td>
                                 </tr>
                             </body>
