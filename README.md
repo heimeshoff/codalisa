@@ -61,7 +61,7 @@ The `signals` object contains other signals than the values of the adjacent
 cells.
 
 - `cell.dist`, 0..100, distance to distance sensor.
-- `cell.btn, 0 or 100, whether the button is pressed.
+- `cell.btn`, 0 or 100, whether the button is pressed.
 - `cell.light`, 0..100, the light sensor.
 - `cell.sound`, 0..100, loudness measured on the sound sensor.
 - `cell.mouse.x`, `cell.mouse.y`, location of the mouse cursor with respect to
