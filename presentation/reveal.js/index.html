@@ -194,7 +194,6 @@ $(function() {
                     var c = new Color(Math.cos(x / 50) * 255,
                                       Math.sin(y / 50) * 255,
                                       0);
-                    console.log(c);
                     cell.set(x, y, c);
                 }
             }
@@ -212,7 +211,7 @@ $(function() {
                         <table><tr><td>
                         <pre><code data-trim>
 var t0;
-function setup(t) { t0 = t; }, 
+function setup(t) { t0 = t; }
 
 function draw(t, cell) {
   for (var y = 0; y < cell.h; y++) {
@@ -225,7 +224,6 @@ function draw(t, cell) {
     }
   }
 }
-
                         </code></pre>
                         </td><td style="width: 250px;">
                             <canvas id="moving-noise">

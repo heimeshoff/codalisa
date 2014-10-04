@@ -36,6 +36,7 @@ showMatrix('default');
 var socket = io();
 
 socket.on('script-published', function(script) {
+    console.log('published', script);
     loadAndAssign([script.file], matrix.agents());
 });
 socket.on('cell-changed', function(cell) {

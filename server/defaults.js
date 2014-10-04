@@ -3,6 +3,7 @@ var animalonymous = require('animalonymous');
 module.exports = {
     newScript: function() {
         return {title: animalonymous.randomStr(),
+                version: 1,
                 script: ['/**',
                          ' * Be kind to others and your future self: describe your script.',
                          ' *',

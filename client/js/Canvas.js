@@ -260,7 +260,6 @@ var Simulation = function(canvas, x_cells, y_cells, errorSink) {
                 console.log(e);
                 deadCross(cell);
                 a.error = e;
-                console.log(a.agent);
                 if (errorSink && a.agent.file) errorSink(a.agent.file, e);
             }
         }
