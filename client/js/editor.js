@@ -111,11 +111,13 @@ sim.start();
 /**
  * Make the canvas' actual aspect corresponding to its virtual surface aspect
  */
-function updateCanvasSize() {
+function updateSizes() {
     var canvas = $('#preview');
     var aspect = canvas.get(0).width / canvas.get(0).height;
 
     canvas.height(canvas.width / aspect);
+
+    $('.list').height($(window).height() - 200);
 }
-updateCanvasSize();
-$(window).resize(updateCanvasSize);
+updateSizes();
+$(window).resize(updateSizes);
