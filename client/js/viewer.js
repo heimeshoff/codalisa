@@ -5,7 +5,7 @@ var sim;
 
 function loadAndAssign(agentNames, assignments) {
     _.each(agentNames, function(name) {
-        loadScript(name).then(function(script) {
+        Server.loadScript(name).then(function(script) {
             try {
                 _(assignments).filter(function(ass) {
                     return ass.file == script.file;
@@ -23,7 +23,7 @@ function loadAndAssign(agentNames, assignments) {
 
 function showMatrix(matrixName) {
     matrix.load(matrixName).then(function() {
-        sim = new Simulation(canvas, matrix.width(), matrix.height(), postError);
+        sim = new Simulation(canvas, matrix.width(), matrix.height(), Server.postError);
 
         loadAndAssign(_(matrix.agents()).pluck('file').unique().value(), matrix.agents());
 

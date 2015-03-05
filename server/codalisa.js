@@ -8,6 +8,7 @@ var defaults = require('./defaults');
 var signals  = require('./signals');
 
 app.use(require('body-parser').urlencoded({ extended: false }))
+app.use(require('body-parser').json());
 
 var mkErrorHandler = function(res) {
     return function(err) {
@@ -15,12 +16,14 @@ var mkErrorHandler = function(res) {
     };
 };
 
-var jsdb = require('./jsdb');
-var script_db = jsdb.open(jsdb.Script, '../scripts');
+var jsdb      = require('./jsdb');
+var storage   = require('./storage');
 var matrix_db = jsdb.open(jsdb.Matrix, '../matrices');
 
+var script_db = storage.open('../scripts');
+
 matrix_db.exists('default')
-    .then(function(exists) {
+    .done(function(exists) {
         if (!exists) matrix_db.save('default', {
             title: 'Default matrix',
             width: 4,
@@ -33,82 +36,138 @@ signals.start(function(signals) {
     io.emit('signals', signals);
 });
 
+var updateCounterInTitle = function(title) {
+    var m = title.match(/^(.*)\((\d+)\)$/)
+    if (m) {
+        return m[1] + '(' + (m[2] + 1) + ')';
+    }
+    return title + ' (2)';
+}
+
 //----------------------------------------------------------------------
 //  URL HANDLERS
 //
 
-app.get('/s', function(req, res) {
-    script_db.list().then(function(files) {
-        res.json(files);
-    }).fail(mkErrorHandler(res));
+function populateHead(head, name) {
+    head._name = name;
+    head._oldRef = head.ref;
+    head._oldName = head._name;
+    return head;
+}
+
+/**
+ * Scripts are loaded as objs
+ */
+app.get('/s/:ref', function(req, res) {
+    script_db.loadObj(req.params.ref).done(function(obj) {
+        obj._ref = req.params.ref;
+        res.json(obj);
+    }, mkErrorHandler(res));
 });
 
+/**
+ * Save any script here and get the saved ID as a name
+ */
+app.post('/s', function(req, res) {
+    console.log('Saving script');
+    script_db.saveObj(req.body).done(function(ref) {
+        console.log('Saved to ' + ref);
+        res.send(ref);
+    }, mkErrorHandler(res));
+});
+
+/**
+ * Create a default empty script
+ */
 app.post('/s/create', function(req, res) {
-    script_db.create(defaults.newScript()).then(function(name) {
-        res.send(name);
-        io.emit('scripts-changed', { file: req.params.file });
-    }).fail(mkErrorHandler(res));
+    script_db.saveObj(defaults.newScript()).done(function(ref) {
+        console.log('Created new script at ' + ref);
+        res.send(ref);
+    }, mkErrorHandler(res));
 });
 
-app.get('/s/:file', function(req, res) {
-    script_db.load(req.params.file).then(function(file) {
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-        res.json(file);
-    }).fail(mkErrorHandler(res));
+/**
+ * Return all heads for the scripts, of the form {title, ref}
+ */
+app.get('/h', function(req, res) {
+    script_db.listHeads().done(function(heads) {
+        heads = _.map(heads, populateHead);
+        res.json(heads);
+    }, mkErrorHandler(res));
 });
 
-app.post('/s/:file', function(req, res) {
-    console.log('Saving changes to ' + req.params.file);
+/**
+ * Load a head by name
+ *
+ * Return the exact same object in the future when changing it.
+ */
+app.get('/h/:name', function(req, res) {
+    script_db.loadHead(req.params.name).done(function(head) {
+        populateHead(head, req.params.name);
+        res.json(head);
+    }, mkErrorHandler(res));
+});
 
-    script_db.loadOrEmpty(req.params.file).then(function(original) {
-        if (original.version != req.body.version) {
-            res.send('The file was changed while you were editing it. Please copy/paste to Notepad and refresh the page before editing again.');
-            return;
-        }
+/**
+ * Save a head
+ *
+ * If a conflict occurs, the head will be saved under a different name. The
+ * saved name is always returned.
+ */
+app.post('/h', function(req, res) {
+    console.log('Saving head ' + JSON.stringify(req.body));
+    if (!req.body.title) throw new Error('Give a title');
 
-        req.body.version = original.version + 1;
-
-        return script_db.save(req.params.file, req.body).then(function() {
-            res.send('OK');
-            io.emit('scripts-changed', { file: req.params.file });
-
-            console.log('hoi');
-            
-            if (original.script != req.body.script) {
-                console.log('Script published!');
-                io.emit('script-published', { file: req.params.file });
+    var doSave = function(head, tries) {
+        return script_db.saveHead(req.body.title, saveHead, req.body._oldRef).fail(function(err) {
+            if (err instanceof storage.ConflictError && tries < 5) {
+                head.title = updateCounterInTitle(head.title);
+                return doSave(head, (tries || 0) + 1);
             }
+
+            throw err;
         });
-    }).fail(mkErrorHandler(res));
+    }
+
+    var saveHead = _.clone(req.body);
+    doSave(saveHead).then(function(name) {
+        // If the name changed, delete the old head and ignore conflicts 
+        if (req.body._oldName && name != req.body._oldName)
+            return script_db.deleteHead(req.body._oldName, req.body._oldRef)
+                .then(function() { return name; }, function() { return name; });
+        return name;
+    }).done(function(name) {
+        res.send(name);
+    }, mkErrorHandler(res));
 });
 
-app.post('/s/:file/error', function(req, res) {
-    console.log('Reporting error', req.body.error);
-    script_db.load(req.params.file).then(function(script) {
-        script.errors.push(req.body.error);
-        return script_db.save(req.params.file, script);
-    }).then(function(script) {
-        io.emit('script-error', { file: req.params.file, error: req.body.error });
-    }).fail(mkErrorHandler(res));
+/**
+ * Reflect the given error message to all connected clients
+ */
+app.post('/s/:ref/error', function(req, res) {
+    var errorMsg = { ref: req.params.ref, error: req.body.error };
+    console.warn('Script error', errorMsg);
+    io.emit('script-error', errorMsg);
+    res.send('kthxbai');
 });
 
 app.get('/m', function(req, res) {
-    matrix_db.list().then(function(files) {
+    matrix_db.list().done(function(files) {
         res.json(files);
-    }).fail(mkErrorHandler(res));
+    }, mkErrorHandler(res));
 });
 
 app.post('/m/create', function(req, res) {
-    matrix_db.create(defaults.newScript()).then(function(name) {
+    matrix_db.create(defaults.newScript()).done(function(name) {
         res.send(name);
         io.emit('matrix-changed', { file: req.params.file });
-    }).fail(mkErrorHandler(res));
+    }, mkErrorHandler(res));
 });
 
 app.get('/m/:file', function(req, res) {
-    matrix_db.load(req.params.file).then(function(file) {
+    matrix_db.load(req.params.file).done(function(file) {
         res.json(file);
-    }).fail(mkErrorHandler(res));
+    }, mkErrorHandler(res));
 });
 
 app.get('/m/:file/:x/:y', function(req, res) {
@@ -117,9 +176,9 @@ app.get('/m/:file/:x/:y', function(req, res) {
         var existing = _.find(matrix.agents, coords);
         if (!existing) return coords;
         return existing;
-    }).then(function(agent) {
+    }).done(function(agent) {
         res.json(agent);
-    }).fail(mkErrorHandler(res));
+    }, mkErrorHandler(res));
 });
 
 app.post('/m/:file/:x/:y', function(req, res) {
@@ -139,17 +198,17 @@ app.post('/m/:file/:x/:y', function(req, res) {
         });
     }).then(function(matrix) {
         return matrix_db.save(req.params.file, matrix);
-    }).then(function() {
+    }).done(function() {
         res.send('OK');
         io.emit('matrix-changed', { changedMatrix: req.params.file });
-    }).fail(mkErrorHandler(res));
+    }, mkErrorHandler(res));
 });
 
 app.post('/m/:file', function(req, res) {
     console.log('Saving changes to ' + req.params.file);
-    matrix_db.save(req.params.file, req.body).then(function() {
+    matrix_db.save(req.params.file, req.body).done(function() {
         res.send('OK');
-    }).fail(mkErrorHandler(res));
+    }, mkErrorHandler(res));
 });
 
 //----------------------------------------------------------------------

@@ -37,7 +37,7 @@ var models = {
         return this.activeScript.save(this.scripts)
             .then(function(obj) {
                 this.saving(false);
-                var a = makeAgentFromScript(obj.draft, f);
+                var a = makeAgentFromScript(obj.script, f);
                 sim.setAgent(1, 1, a);
                 return obj;
             }.bind(this))
@@ -68,22 +68,21 @@ editor.focus();
 /**
  * Handle change of selected script
  */
-models.scripts.selected.subscribe(function(name) {
+models.scripts.selectedName.subscribe(function(name) {
     // When the selected item changes, quickly save the current script :)
     models.activeScript.save(models.scripts, editor.getValue());
-    if (window.history.replaceState) {
-        window.history.replaceState(null, null, '#' + name);
-    }
 
-    if (!name)
+    if (!name) {
+        if (window.history.replaceState) window.history.replaceState(null, null, '#');
         models.activeScript.clear();
-    else 
-        models.scripts
-            .get(name)
-            .then(models.activeScript.set);
+    }
+    else  {
+        if (window.history.replaceState) window.history.replaceState(null, null, '#' + name);
+        models.activeScript.loadHead(name);
+    }
 });
 
-models.scripts.selected(window.location.hash.substr(1));
+models.scripts.selectedName(window.location.hash.substr(1));
 
 models.matrix.load('default');
 
@@ -103,9 +102,10 @@ var socket = io();
 socket.on('scripts-changed', function(msg) { models.scripts.refresh(); });
 socket.on('matrix-changed', function(ev) { models.matrix.reload(ev.changedMatrix); });
 socket.on('signals', function(signals) { SimRunner.setSignals(signals); });
-socket.on('script-error', function(err) { addErrorToLog(err.file, err.error); });
+socket.on('script-error', function(err) { addErrorToLog(err.script, err.error); });
 
 SimRunner.onFps = models.fps;
+SimRunner.setFps(10);
 sim.start();
 
 /**

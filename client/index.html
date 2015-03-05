@@ -15,7 +15,7 @@
             <div class="script-list h-left h-15p with-content with-separator" data-bind="with: scripts">
                 <h4>Scripts</h4>
                 <ul class="list" data-bind="foreach: scripts">
-                    <li class="list-item" data-bind="text: title, css: { selected: $parent.selected() == file }, click: $parent.select">x</li>
+                    <li class="list-item" data-bind="text: title, css: { selected: $parent.selectedName() == _name }, click: $parent.select">x</li>
                 </ul>
                 <center><a href="#" class="radius success button" data-bind="click: newScript">New...</a></center>
             </div>
@@ -23,34 +23,34 @@
             <div class="editor-pane h-left h-40p with-content with-separator">
                 <div class="v-div">
                     <div class="h-top" data-bind="with: activeScript">
-                        <input type="text" placeholder="My Script..." data-bind="value: title, disable: readOnly"/>
+                        <input type="text" placeholder="My Script..." data-bind="value: title, disabled: readOnly"/>
 
                         <ul class="button-group">
-                            <li><a href="#" class="secondary button" data-bind="css: { active: isDraft }, click: setDraft">
-                                Draft
+                            <li>
+                                <a href="#" class="secondary button" data-bind="css: { active: scriptTab.isScript }, click: scriptTab.setScript">
+                                Script
                                 <span class="round label" title="Script has unsaved changes" data-bind="visible: isDirty()">chg</span>
                                 <span class="success round label" title="Script has unpublished changes" data-bind="visible: isUnpublished() && !isDirty()">pub</span>
                             </a></li>
-                            <li><a href="#" class="secondary button" data-bind="css: { active: isPublished }, click: setPublished">Published</a></li>
-                            <li><a href="#" class="secondary button" data-bind="css: { active: isGrid }, click: setGrid">Grid</a></li>
+                            <li><a href="#" class="secondary button" data-bind="css: { active: scriptTab.isGrid }, click: scriptTab.setGrid">Grid</a></li>
                             <li style="padding-left: 20px;">
                                 <input type="checkbox" data-bind="checked: $parent.useVim" id="useVim" > 
                                 <label for="useVim"> Vim mode</label>
                             </li>
                         </ul>
                     </div>
-                    <div class="v-rest" data-bind="visible: activeScript.isPublished() || activeScript.isDraft()">
+                    <div class="v-rest" data-bind="visible: activeScript.scriptTab.isScript">
                         <div id="editor" class="editor"></div>
                     </div>
-                    <div class="v-rest" data-bind="visible: activeScript.isGrid, with: matrix">
+                    <div class="v-rest" data-bind="visible: activeScript.scriptTab.isGrid, with: matrix">
                         <p>Click to assign this script to cells.</p>
                         <table width="100%" class="matrix-table">
                             <tbody data-bind="foreach: rows">
                                 <tr data-bind="foreach: $data">
-                                    <td data-bind="css: { itsme: file == $root.activeScript.file(), occupied: file }">
-                                        <span data-bind="visible: !file">(nothing)</span>
+                                    <td data-bind="css: { itsme: name == $root.activeScript.name(), occupied: name }">
+                                        <span data-bind="visible: !name">(nothing)</span>
                                         <a href="#" data-bind="click: $root.scripts.select, text: title"></a>
-                                        <button class="success tiny" data-bind="click: $root.occupy, visible: file != $root.activeScript.file()">put script here</button>
+                                        <button class="success tiny" data-bind="click: $root.occupy, visible: name != $root.activeScript.name()">put script here</button>
                                     </td>
                                 </tr>
                             </body>
@@ -68,18 +68,18 @@
                 <div class="v-div" data-bind="with: activeScript">
                     <div class="v-top">
                         <ul class="button-group">
-                            <li><a href="#" class="secondary button" data-bind="css: { active: isPreview }, click: setPreview">Preview</a></li>
-                            <li><a href="#" class="secondary button" data-bind="css: { active: isErrors }, click: setErrors">
+                            <li><a href="#" class="secondary button" data-bind="css: { active: previewTab.isPreview }, click: previewTab.setPreview">Preview</a></li>
+                            <li><a href="#" class="secondary button" data-bind="css: { active: previewTab.isErrors }, click: previewTab.setErrors">
                                 Errors
                                 <span class="round alert label" title="Script produced errors" data-bind="visible: errors().length, text: errors().length"></span>
                             </a></li>
                         </ul>
                     </div>
-                    <div class="v-rest" data-bind="visible: isPreview">
+                    <div class="v-rest" data-bind="visible: previewTab.isPreview">
                         <canvas id="preview" style="width: 100%;"></canvas>
                         <div><small><span data-bind="text: $root.fps"></span> fps</small></div>
                     </div>
-                    <div class="v-rest" data-bind="visible: isErrors">
+                    <div class="v-rest" data-bind="visible: previewTab.isErrors">
                         <table>
                             <thead>
                                 <tr><th>Error</th></tr>

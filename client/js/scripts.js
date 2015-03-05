@@ -1,46 +1,105 @@
-var loadScript = function(file) {
-    return $.get('/s/' + encodeURIComponent(file));
+/**
+ * Data model
+ *
+ * Script: 'script', 'title'.
+ * Script head: 'ref', 'title'.
+ * Cell head: 'ref', 'x', 'y', 'title'.
+ *
+ * Title is extremely denormalized for the heck of it.
+ */
+
+var update = function(obj, changes) {
+    return _.merge(_.clone(obj), changes);
 }
 
-var postError = function(file, error) {
-    return $.post('/s/' + encodeURIComponent(file) + '/error', { error: error.toString() });
-}
+/**
+ * Server calls
+ */
+var Server = {
+    post: function(url, data) {
+        return $.ajax({
+            type: 'POST',
+            url: url, 
+            data: JSON.stringify(data),
+            contentType: 'application/json; charset=utf-8'
+        });
+    },
 
+    postJSON: function(url, data) {
+        return $.ajax({
+            type: 'POST',
+            url: url, 
+            data: JSON.stringify(data),
+            contentType: 'application/json; charset=utf-8',
+            dataType: 'json'
+        });
+    },
+
+    loadScript: function(ref) {
+        return $.getJSON('/s/' + encodeURIComponent(ref));
+    },
+
+    saveScript: function(script) {
+        return Server.post('/s', script);
+    },
+
+    loadHead: function(name) {
+        return $.getJSON('/h/' + encodeURIComponent(name));
+    },
+
+    saveHead: function(head) {
+        return Server.post('/h', head);
+    },
+
+    postError: function(ref, error) {
+        return Server.post('/s/' + encodeURIComponent(ref) + '/error', { error: error.toString() });
+    },
+
+    listHeads: function() {
+        return $.getJSON('/h');
+    },
+
+    createScript: function() {
+        return Server.post('/s/create', {})
+            .then(Server.loadScript)
+            .then(function(script) {
+                console.log('loaded new script');
+                var head = { ref: script._ref, title: script.title, isScript: true };
+
+                return Server.saveHead(head);
+            });
+    },
+};
+
+/**
+ * List of server-side scripts
+ */
 var Scripts = function() {
     var self = this;
     self.scripts = ko.observableArray();
-    self.selected = ko.observable();
+    self.selectedName = ko.observable();
 
     self.refresh = function() {
-        $.getJSON('/s').then(function(contents) {
-            self.scripts(contents);
+        Server.listHeads().then(function(heads) {
+            self.scripts(_.where(heads, { isScript: true }));
 
-            var selectionOk = _(contents)
-                .pluck('file')
-                .contains(self.selected());
+            var selectionOk = _(heads)
+                .pluck('_name')
+                .contains(self.selectedName());
 
             if (!selectionOk)
-                self.selected(contents && contents.length ? contents[0].file : null);
+                self.selectedName(heads && heads.length ? heads[0].name : null);
         });
     }
 
-    self.select = function(obj) {
-        self.selected(obj.file);
+    self.select = function(head) {
+        self.selectedName(head._name);
     }
 
     self.newScript = function() {
-        $.post('/s/create', {})
-            .then(self.selected)
+        Server.createScript()
+            .then(self.selectedName)
             .then(self.refresh);
-    }
-
-    self.get = function(file) {
-        return $.get('/s/' + encodeURIComponent(file));
-    }
-
-    self.put = function(file, obj) {
-        assert(obj.title !== undefined && obj.script !== undefined && obj.draft !== undefined, 'put argument must be a script object');
-        return $.post('/s/' + encodeURIComponent(file), obj);
     }
 }
 
@@ -62,6 +121,17 @@ var RedirectableObservable = function(current) {
     return ret;
 }
 
+var Tab = function(options) {
+    var self = this;
+
+    var current = ko.observable(options[0]);
+
+    _.each(options, function(option) {
+        self['is' + option] = ko.pureComputed(function() { return current() == option; });
+        self['set' + option] = function() { current(option); };
+    });
+}
+
 /**
  * VM for active script
  *
@@ -72,110 +142,75 @@ var RedirectableObservable = function(current) {
 var ActiveScript = function() {
     var self = this;
 
+    self.scriptTab = new Tab(['Script', 'Grid']);
+    self.previewTab = new Tab(['Preview', 'Errors']);
+
     // Data
-    var originalObj = ko.observable();
+    var originalHead = ko.observable();
 
-    self.file = ko.observable();
+    self.name = ko.pureComputed(function() { return originalHead() && originalHead._name; });
     self.title = ko.observable();
-    self.published = ko.observable();  // is called 'script' on the DTO :x
-    self.draft = ko.observable();
+    self.script = ko.observable();
     self.errors = ko.observableArray();
-
-    var page = ko.observable('draft');
-    var page2 = ko.observable('preview');
+    self.readOnly = ko.pureComputed(function() { return !self.name(); });
 
     // Manipulation
-    self.script = RedirectableObservable(self.draft);  // view on the actual script
+    //self.script = RedirectableObservable(self.draft);  // view on the actual script
 
-    self.isDraft = ko.pureComputed(function() { return page() == 'draft'; });
-    self.isPublished = ko.pureComputed(function() { return page() == 'published'; });
-    self.isGrid = ko.pureComputed(function() { return page() == 'grid'; });
-    self.readOnly = ko.pureComputed(function() { return !self.isDraft() || !self.file(); });
-    self.setDraft = function() { page('draft'); }
-    self.setPublished = function() { page('published'); }
-    self.setGrid = function() { page('grid'); }
     self.viewScript = ko.observable();
-    self.version = ko.observable();
 
-    self.isPreview = ko.pureComputed(function() { return page2() == 'preview'; });
-    self.isErrors = ko.pureComputed(function() { return page2() == 'errors'; });
-    self.setPreview = function() { page2('preview'); };
-    self.setErrors = function() { page2('errors'); };
+    var set = function(headAndScript) {
+        originalHead(headAndScript[0]);
 
-    self.isDraft.subscribe(function(isDraft) {
-        self.script.redirect(isDraft ? self.draft : self.published);
-    });
+        self.title(headAndScript[1].title || '');
+        self.script(headAndScript[1].script || '');
+        self.errors([]);
+
+        self.scriptTab.setScript();
+    }
 
     self.clear = function() {
-        self.file('');
-        self.title('');
-        self.script('');
-        self.published('');
-        self.draft('');
-        self.setDraft();
+        set([{}, {}]);
     }
 
-    self.set = function(scriptObj) {
-        originalObj(scriptObj);
-
-        self.file(scriptObj.file);
-        self.title(scriptObj.title);
-        self.published(scriptObj.script);
-        self.draft(scriptObj.draft);
-        self.version(scriptObj.version);
-        self.errors(scriptObj.errors);
-
-        self.setDraft();
-    }
-
-    self.publish = function() {
-        self.published(self.draft());
+    self.loadHead = function(name) {
+        return Server.loadHead(name).then(function(head) {
+            return Server.loadScript(head.ref).then(function(script) {
+                return [head, script];
+            });
+        }).then(set);
     }
 
     self.isDirty = ko.pureComputed(function() {
-        if (!self.file()) return false;
+        if (!self.name()) return false;
 
-        var original = originalObj();
-        return (self.title() != original.title ||
-                self.published() != original.script ||
-                self.draft() != original.draft);
+        var original = originalHead();
+        return (self.title() != original.title || self.script() != original.script);
     });
 
     self.isUnpublished = ko.pureComputed(function() {
-        if (!self.file()) return false;
-
-        return self.published() != self.draft();
+        if (!self.name()) return false;
+        return false;
     });
 
     /**
      * Save the given script to the server, if it has changed since last loaded
      * it.
      */
-    self.save = function(scripts) {
-        var file = this.file();
-        var obj = {
-            title: self.title(),
-            script: self.published(),
-            draft: self.draft(),
-            version: self.version()
-        }
+    self.save = function() {
+        if (!self.name()) return;
 
-        if (!self.isDirty()) return $.Deferred().resolve(obj).promise();
+        var script = { 
+            title: self.title(),
+            script: self.script()
+        };
+        var head = update(self.originalHead, { title: self.title() });
 
         console.log('saving...');
-        return scripts.put(file, obj).then(function(result) {
-            if (result == 'OK') {
-                console.log('saved');
-                self.version(obj.version + 1); // This is nasty, but the easiest way to do it for now
-                // Check if the subject changed in the meantime
-                if (file == self.file()) {
-                    originalObj(obj);
-                    self.errors([]);
-                }
-
-                return obj;
-            }
-            else return $.Deferred().reject(result).promise();
-        });
+        return Server.saveScript(script)
+            .then(function(ref) {
+                head.ref = ref;
+                return Server.saveHead(head);
+            }).then(self.loadHead);
     }
 }
