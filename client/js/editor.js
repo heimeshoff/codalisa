@@ -25,25 +25,41 @@ var models = {
     useVim: ko.observable(false),
     saving: ko.observable(false),
 
+    previewTimer: null,
+    saveTimer: null,
+
     publish: function() {
         this.activeScript.publish();
         this.preview();
     },
 
+    scriptChanged: function() {
+        window.clearInterval(this.previewTimer);
+        this.previewTimer = window.setTimeout(this.preview.bind(this), 500);
+    },
+
     preview: function() {
-        this.saving(true);
-        this.activeScript.setPreview();
+        // Run this script now, and schedule to save the script in 100ms.
+        // This will make sure that if the script goes into a infinite loop, we
+        // don't save it.
+        // This is like a horribly crappy way to do this but I don't know the way
+        // around my code anymore :(.
+        var a = makeAgentFromScript(this.activeScript.draft(), this.activeScript.file());
+        if (a) sim.setAgent(1, 1, a);
         var f = this.activeScript.file();
-        return this.activeScript.save(this.scripts)
-            .then(function(obj) {
-                this.saving(false);
-                var a = makeAgentFromScript(obj.draft, f);
-                sim.setAgent(1, 1, a);
-                return obj;
-            }.bind(this))
-            .fail(function(err) {
-                alert(err);
-            });
+
+        var self = this;
+        window.clearInterval(self.saveTimer);
+        this.saveTimer = window.setTimeout(function() {
+            self.saving(true);
+            return self.activeScript.save(self.scripts)
+                .then(function(obj) {
+                    self.saving(false);
+                    return obj;
+                }).fail(function(err) {
+                    alert(err);
+                });
+        }, 1000);
     },
 
     /**
@@ -61,7 +77,7 @@ var models = {
 };
 
 var editor = initAce('editor');
-bindEditorModel(editor, models.activeScript);
+bindEditorModel(editor, models.activeScript, models.scriptChanged.bind(models));
 initVimPreference(editor, models.useVim);
 editor.focus();
 
@@ -70,7 +86,7 @@ editor.focus();
  */
 models.scripts.selected.subscribe(function(name) {
     // When the selected item changes, quickly save the current script :)
-    models.activeScript.save(models.scripts, editor.getValue());
+    //models.activeScript.save(models.scripts, editor.getValue());
     if (window.history.replaceState) {
         window.history.replaceState(null, null, '#' + name);
     }

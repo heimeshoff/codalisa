@@ -29,12 +29,13 @@ function initVimPreference(editor, observable) {
     LocalStorage.register('vim', models.useVim);
 };
 
-function bindEditorModel(editor, activeScript) {
+function bindEditorModel(editor, activeScript, on_change) {
     activeScript.script.subscribe(function(script) {
         if (script != editor.getValue()) editor.setValue(script, -1);
     });
     editor.on('change', function() {
         activeScript.script(editor.getValue());
+        if (on_change) on_change();
     });
     activeScript.readOnly.subscribe(function(ro) {
         editor.setReadOnly(ro);
