@@ -17,21 +17,12 @@ var mkErrorHandler = function(res) {
 
 var jsdb = require('./jsdb');
 var script_db = jsdb.open(jsdb.Script, '../scripts');
-var matrix_db = jsdb.open(jsdb.Matrix, '../matrices');
 
-matrix_db.exists('default')
-    .then(function(exists) {
-        if (!exists) matrix_db.save('default', {
-            title: 'Default matrix',
-            width: 4,
-            height: 4,
-            agents: []
-        });
-    });
-
+/*
 signals.start(function(signals) {
     io.emit('signals', signals);
 });
+*/
 
 //----------------------------------------------------------------------
 //  URL HANDLERS

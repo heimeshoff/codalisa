@@ -10,7 +10,14 @@ html {
 }
 
 .list {
+    height: 100%;
     overflow: auto;
+}
+
+.script-list {
+}
+
+.biggy {
 }
 
 .script-list h4 {

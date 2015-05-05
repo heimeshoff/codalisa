@@ -1,26 +1,16 @@
-var canvas = new Canvas(300, 300, document.getElementById('preview'));
+var world = new World(900, 900, document.getElementById('preview'));
 
 var addErrorToLog = function(script, error) {
     if (script == models.activeScript.file())
         models.activeScript.errors.push(error);
 }
 
-var sim = new Simulation(canvas, 3, 3, addErrorToLog, true);
-
-var mouseDrawing = new MouseDrawing();
-sim.setAgent(0, 0, mouseDrawing);
-sim.setAgent(1, 0, mouseDrawing);
-sim.setAgent(2, 0, mouseDrawing);
-sim.setAgent(0, 1, mouseDrawing);
-sim.setAgent(2, 1, mouseDrawing);
-sim.setAgent(0, 2, mouseDrawing);
-sim.setAgent(1, 2, mouseDrawing);
-sim.setAgent(2, 2, mouseDrawing);
+//var mouseDrawing = new MouseDrawing();
+world.addAgent(new Agent('user'));
 
 var models = {
     scripts: new Scripts(),
     activeScript: new ActiveScript(),
-    matrix: new MatrixModel(),
 
     useVim: ko.observable(false),
     saving: ko.observable(false),
@@ -33,9 +23,8 @@ var models = {
         this.preview();
     },
 
-    scriptChanged: function() {
-        window.clearInterval(this.previewTimer);
-        this.previewTimer = window.setTimeout(this.preview.bind(this), 500);
+    reinit: function() {
+        sim.getAgent('user').reinit();
     },
 
     preview: function() {
@@ -44,8 +33,8 @@ var models = {
         // don't save it.
         // This is like a horribly crappy way to do this but I don't know the way
         // around my code anymore :(.
-        var a = makeAgentFromScript(this.activeScript.draft(), this.activeScript.file());
-        if (a) sim.setAgent(1, 1, a);
+        var a = agentControlFromScript(this.activeScript.draft(), this.activeScript.file());
+        if (a) world.agent('user').setControl(a);
         var f = this.activeScript.file();
 
         var self = this;
@@ -60,6 +49,11 @@ var models = {
                     alert(err);
                 });
         }, 1000);
+    },
+
+    scriptChanged: function() {
+        window.clearInterval(this.previewTimer);
+        this.previewTimer = window.setTimeout(this.preview.bind(this), 500);
     },
 
     /**
@@ -101,8 +95,6 @@ models.scripts.selected.subscribe(function(name) {
 
 models.scripts.selected(window.location.hash.substr(1));
 
-models.matrix.load('default');
-
 // Save changes to server periodically
 /*
 window.setInterval(function() {
@@ -117,12 +109,12 @@ models.scripts.refresh();
 var socket = io();
 
 socket.on('scripts-changed', function(msg) { models.scripts.refresh(); });
-socket.on('matrix-changed', function(ev) { models.matrix.reload(ev.changedMatrix); });
 socket.on('signals', function(signals) { SimRunner.setSignals(signals); });
 socket.on('script-error', function(err) { addErrorToLog(err.file, err.error); });
 
-SimRunner.onFps = models.fps;
+var sim = new Simulation(world, 0, models.fps);
 sim.start();
+
 
 /**
  * Make the canvas' actual aspect corresponding to its virtual surface aspect

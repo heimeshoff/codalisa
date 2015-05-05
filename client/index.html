@@ -32,7 +32,6 @@
                                 <span class="success round label" title="Script has unpublished changes" data-bind="visible: isUnpublished() && !isDirty()">pub</span>
                             </a></li>
                             <li><a href="#" class="secondary button" data-bind="css: { active: isPublished }, click: setPublished">Published</a></li>
-                            <li><a href="#" class="secondary button" data-bind="css: { active: isGrid }, click: setGrid">Grid</a></li>
                             <li style="padding-left: 20px;">
                                 <input type="checkbox" data-bind="checked: $parent.useVim" id="useVim" > 
                                 <label for="useVim"> Vim mode</label>
@@ -42,24 +41,10 @@
                     <div class="v-rest" data-bind="visible: activeScript.isPublished() || activeScript.isDraft()">
                         <div id="editor" class="editor"></div>
                     </div>
-                    <div class="v-rest" data-bind="visible: activeScript.isGrid, with: matrix">
-                        <p>Click to assign this script to cells.</p>
-                        <table width="100%" class="matrix-table">
-                            <tbody data-bind="foreach: rows">
-                                <tr data-bind="foreach: $data">
-                                    <td data-bind="css: { itsme: file == $root.activeScript.file(), occupied: file }">
-                                        <span data-bind="visible: !file">(nothing)</span>
-                                        <a href="#" data-bind="click: $root.scripts.select, text: title"></a>
-                                        <button class="success tiny" data-bind="click: $root.occupy, visible: file != $root.activeScript.file()">put script here</button>
-                                    </td>
-                                </tr>
-                            </body>
-                        </table>
-                    </div>
                     <div style="text-align: right; height: 45px;">
                         <img src="res/spinner.gif" style="margin-top: 10px; margin-right: 30px;" data-bind="visible: saving">
-                        <a href="#" style="margin-right: 20px;" data-bind="click: publish, visible: !saving()">Publish</a>
-                        <a href="#" class="radius button" data-bind="click: preview, visible: !saving()">Preview</a>
+                        <a href="#" style="margin-right: 20px;" data-bind="click: reinit, visible: !saving()">Re-setup</a>
+                        <a href="#" class="radius button" data-bind="click: publish, visible: !saving()">Publish</a>
                     </div>
                 </div>
             </div>
@@ -104,14 +89,17 @@
         <script src="bower_components/json2/json2.js"></script>
 
         <script src="/socket.io/socket.io.js"></script>
-        <script src="js/errors.js"></script>
         <script src="js/ace-knockout.js"></script>
+        <script src="js/errors.js"></script>
+
+        <script src="js/Color.js"></script>
+        <script src="js/palette.js"></script>
+        <script src="js/Vector.js"></script>
+        <script src="js/Agent.js"></script>
+        <script src="js/Canvas.js"></script>
         <script src="js/LocalStorage.js"></script>
         <script src="js/scripts.js"></script>
-        <script src="js/Canvas.js"></script>
         <script src="js/matrix.js"></script>
-        <script src="js/agents.js"></script>
-        <script src="js/agent-fns.js"></script>
         <script src="js/editor.js"></script>
     </body>
 </html>
