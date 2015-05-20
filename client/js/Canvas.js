@@ -33,13 +33,17 @@ var abs_clip = function(x, max) {
 var World = function(w, h, canvasEl, errorHandler) {
     var self = this;
 
-    var MAX_SPEED = 300; // Pixels per second
-    var VFPS = 60;
-    var FADE_TIME = VFPS * 10;
-    var MAX_PARTICLES_PER_AGENT = FADE_TIME;  // One particle per frame ought to be allowed
+    var physics = {};
+    physics.MAX_SPEED = 300; // Pixels per second
+    physics.VFPS = 60;
+    physics.FADE_TIME = physics.VFPS * 10,
+    physics.MAX_PARTICLES_PER_AGENT = physics.FADE_TIME;  // One particle per frame ought to be allowed
+    physics.MAX_DRAW_DISTANCE = 100;
+    physics.MAX_SIZE = 100;
+
     var worldSize = new Vector(w, h);
 
-    self.virtual_fps = VFPS;
+    self.virtual_fps = physics.VFPS;
 
     self.canvasEl = canvasEl;
     canvasEl.width = w;
@@ -62,8 +66,8 @@ var World = function(w, h, canvasEl, errorHandler) {
     /**
      * Make a World object from the perspective of a particular agent
      */
-    var makePerspective = function(agent) {
-        return new Perspective(tickNr, agent, self, closest(agents, agent), closest(particles, agent), MAX_SPEED);
+    var makePerspective = function(agent, signals) {
+        return new Perspective(tickNr, agent, self, closest(agents, agent), closest(particles, agent), physics, signals);
     };
 
     /**
@@ -101,23 +105,23 @@ var World = function(w, h, canvasEl, errorHandler) {
      *
      * First tick simultaneously, then move simultaneously.
      */
-    self.tick = function() {
+    self.tick = function(signals) {
         tickNr++;
         shuffle(agents);
         for (var k in agents) {
             var agent = agents[k];
-            var perspective = makePerspective(agent);
-//            try {
+            var perspective = makePerspective(agent, signals);
+            try {
                 agent.tick(perspective.agentView);
-            //} catch (e) {
-                //if (window.console) console.error(e);
-                //agent.logError(e);
-                //if (errorHandler) errorSink(agent.ident, JSON.stringify(e) + ' ' + e.toString());
-            //}
+            } catch (e) {
+                if (window.console && tickNr % 100 == 0) console.error(e);
+                agent.logError(e);
+                if (errorHandler) errorHandler(agent.ident, JSON.stringify(e) + ' ' + e.toString());
+            }
         }
 
         for (var k in agents) {
-            agents[k].move(VFPS);
+            agents[k].move(physics.VFPS);
             agents[k].pos = agents[k].pos.mod(worldSize);
         }
     }
@@ -128,9 +132,9 @@ var World = function(w, h, canvasEl, errorHandler) {
     self.draw = function() {
         clear();
 
-        var t_min = tickNr - FADE_TIME;
+        var t_min = tickNr - physics.FADE_TIME;
         for (var k in particles) {
-            var alpha_factor = Math.max(0, (particles[k].t0 - t_min) / FADE_TIME);
+            var alpha_factor = Math.max(0, (particles[k].t0 - t_min) / physics.FADE_TIME);
             particles[k].draw(ctx, alpha_factor);
         }
 
@@ -144,15 +148,21 @@ var World = function(w, h, canvasEl, errorHandler) {
 
     self.addAgent = function(agent) {
         assert(agent instanceof Agent, 'Not an agent');
+        agents.push(agent);
+        self.reinit(agent.ident);
+    }
+
+    self.reinit = function(ident) {
+        var agent = self.agent(ident);
         // Start at a random position & offset
         agent.v = Vector.fromPolar(
-            Math.random() * MAX_SPEED,
+            Math.random() * physics.MAX_SPEED,
             Math.random() * Math.PI * 2);
         agent.pos = new Vector(
             Math.random() * w,
             Math.random() * h);
-        agents.push(agent);
-    }
+        agent.reinit();
+    };
 
     self.deleteAgent = function(ident) {
         for (var k in agents)
@@ -176,7 +186,7 @@ var World = function(w, h, canvasEl, errorHandler) {
 
         // It's better to delete the oldest ones, but also more expensive. So
         // let's just forbid it atm.
-        if (particles_per_agent[agent.ident] >= MAX_PARTICLES_PER_AGENT)
+        if (particles_per_agent[agent.ident] >= physics.MAX_PARTICLES_PER_AGENT)
             return;
 
         particle.t0 = tickNr;
@@ -200,11 +210,12 @@ var World = function(w, h, canvasEl, errorHandler) {
  * - Change speed vector length (up to a maximum and minimum)
  * - Draw line or particle
  */
-var Perspective = function(t, agent, world, closest_agent, closest_particle, MAX_SPEED) {
+var Perspective = function(t, agent, world, closest_agent, closest_particle, physics, signals) {
     var agent_pos = agent.pos;
 
-    var MAX_DRAW_DISTANCE = 100;
-    var MAX_SIZE = 100;
+    // Using this counter, we can identify subsequent hz
+    // statements, so users don't need to give them names.
+    var every_ctr = 0;
 
     /**
      * The part of this world that an agent is allowed to see
@@ -217,6 +228,10 @@ var Perspective = function(t, agent, world, closest_agent, closest_particle, MAX
         turn: function(degrees) {
             agent.v = agent.v.rotate(degrees / 180 * Math.PI);
         },
+        turnTo: function(vec) {
+            var speed = agent.v.len();
+            agent.v = vec.resize(speed);
+        },
         left: function(degrees) {
             this.turn(degrees);
         },
@@ -224,22 +239,22 @@ var Perspective = function(t, agent, world, closest_agent, closest_particle, MAX
             this.turn(-degrees);
         },
         setSpeed: function(speed) {
-            agent.v = agent.v.resize(abs_clip(speed, MAX_SPEED));
+            agent.v = agent.v.resize(abs_clip(speed, physics.MAX_SPEED));
         },
         scaleSpeed: function(f) {
             var speed = agent.v.len();
-            agent.v = agent.v.resize(abs_clip(speed * f, MAX_SPEED));
+            agent.v = agent.v.resize(abs_clip(speed * f, physics.MAX_SPEED));
         },
         adjustSpeed: function(tr, clip_at_zero) {
             var ns = speed + tr;
             if (clip_at_zero && ns < 0) ns = 0;
 
-            agent.v = agent.v.resize(abs_clip(ns, MAX_SPEED));
+            agent.v = agent.v.resize(abs_clip(ns, physics.MAX_SPEED));
         },
-        signals: { }, // FIXME: Signals
+        signals: Object.create(signals), // Make sure agents can't mess with the source object
 
         // Drop particle
-        drop: function(pos, size, form, color, rotation, alpha) {
+        drop: function(form, pos, size, color, alpha, rotation) {
             pos = Vector.make(pos);
             if (!pos) pos = new Vector(0, 0);
             form = form || 'circle';
@@ -247,9 +262,25 @@ var Perspective = function(t, agent, world, closest_agent, closest_particle, MAX
             if (!size) size = new Vector(10, 10);
             color = color || new Color(0, 0, 0);
 
-            if (pos.len() > MAX_DRAW_DISTANCE) pos = pos.resize(MAX_DRAW_DISTANCE);
-            if (size.len() > MAX_SIZE) size = size.resize(MAX_SIZE);
+            if (pos.len() > physics.MAX_DRAW_DISTANCE) pos = pos.resize(physics.MAX_DRAW_DISTANCE);
+            if (size.len() > physics.MAX_SIZE) size = size.resize(physics.MAX_SIZE);
             world.addParticle(agent, new Particle(agent.pos.plus(pos), form, color, size, rotation, alpha));
+        },
+
+        // Do something every d frames
+        every: function(d, name) {
+            var key = 'time_' + name;
+            if (!name) {
+                every_ctr++;
+                key = 'time_default' + every_ctr;
+            }
+            var ret = !(key in agent.data) || (agent.data[key] + d <= t);
+            if (ret) agent.data[key] = t;
+            return ret;
+        },
+
+        hz: function(d, name) {
+            return this.every(Math.max(physics.VFPS / d, 1), name);
         }
     };
 };
@@ -300,37 +331,22 @@ Particle.prototype.draw = function(ctx, alpha_factor) {
     ctx.restore();
 }
 
+var MouseAgent = function(element, ident) {
+    Agent.call(this, ident);
 
-var MouseSignalGrabber = function(element) {
-    var mx = 0;
-    var my = 0;
-    var click = 0.0;
-
+    var self = this;
     $(element).mousemove(function(ev) {
         var elOfs = $(element).offset(); 
         var Xaspect = element.width ? element.width / $(element).width() : 1;
         var Yaspect = element.height ? element.height / $(element).height() : 1;
 
-        mx = (ev.pageX - elOfs.left) * Xaspect;
-        my = (ev.pageY - elOfs.top) * Yaspect;
-    }).mousedown(function(ev) {
-        click = ev.which;
-        ev.preventDefault();
-        ev.stopPropagation();
-    }).mouseup(function(ev) {
-        click = 0.0;
-        ev.preventDefault();
-        ev.stopPropagation();
-    });
+        var mx = (ev.pageX - elOfs.left) * Xaspect;
+        var my = (ev.pageY - elOfs.top) * Yaspect;
 
-    this.forCell = function(x0, y0) {
-        return {
-            x: mx - x0,
-            y: my - y0,
-            click: click
-        };
-    }
-};
+        self.pos = new Vector(mx, my);
+    });
+}
+MouseAgent.prototype = new Agent();
 
 /**
  * The Simulation drives the world
@@ -359,7 +375,7 @@ var Simulation = function(world, fps, reportFps) {
         var targetTick = tick0 + (Date.now() - t0) * (world.virtual_fps / 1000);
         var ticked = false;
         while (world.tickNr() < targetTick) {
-            world.tick();
+            world.tick(signals);
             ticked = true;
         }
         // But we draw at most once
@@ -370,7 +386,6 @@ var Simulation = function(world, fps, reportFps) {
 
         if (fps == 0)
             window.requestAnimationFrame(driveTick);
-
     }
 
     var running;
@@ -396,6 +411,6 @@ var Simulation = function(world, fps, reportFps) {
     };
 
     this.setSignals = function(sigs) {
-        signals = sigs;
+        signals = sigs || {};
     };
 };

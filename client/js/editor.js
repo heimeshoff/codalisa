@@ -1,12 +1,18 @@
-var world = new World(900, 900, document.getElementById('preview'));
-
+/**
+ * Log the error to the 'errors' array if the error is from the agent
+ * we're editing, or the "currently under edit" agent.
+ */
 var addErrorToLog = function(script, error) {
-    if (script == models.activeScript.file())
+    if (script == models.activeScript.file() || script == 'user')
         models.activeScript.errors.push(error);
 }
 
+var canvasEl = document.getElementById('preview');
+var world = new World(900, 900, canvasEl, addErrorToLog);
+
 //var mouseDrawing = new MouseDrawing();
 world.addAgent(new Agent('user'));
+world.addAgent(new MouseAgent(canvasEl, 'mouse'));
 
 var models = {
     scripts: new Scripts(),
@@ -24,7 +30,7 @@ var models = {
     },
 
     reinit: function() {
-        sim.getAgent('user').reinit();
+        world.reinit('user');
     },
 
     preview: function() {

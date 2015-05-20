@@ -34,6 +34,7 @@ function Agent(ident) {
     this.pos = new Vector(0, 0);
     this.last_pos = this.pos;
     this.v = new Vector(0, 0);
+    this.data = {}; // For other routines to annotate agents
 }
 
 Agent.prototype.reinit = function() {
