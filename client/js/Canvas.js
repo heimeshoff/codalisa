@@ -71,8 +71,8 @@ var World = function(w, h, canvasEl, errorHandler) {
     var makePerspective = function(agent, signals, indexes) {
         return new Perspective(
                 tickNr, agent, self,
-                indexes.agents.find(agent.pos.x, agent.pos.y, agent),
-                indexes.particles.find(agent.pos.x, agent.pos.y, agent),
+                indexes.agents.find(agent.pos.x, agent.pos.y, agent.ident),
+                indexes.particles.find(agent.pos.x, agent.pos.y, agent.ident),
                 physics, signals);
     };
 
@@ -134,7 +134,7 @@ var World = function(w, h, canvasEl, errorHandler) {
 
         var i = 0;
         while (i < particles.length && particles[i].t0 < t_min) {
-            particles_per_agent[particles[i].agent_ident]--;
+            particles_per_agent[particles[i].ident]--;
             i++;
         }
         if (i > 0) {
@@ -186,7 +186,7 @@ var World = function(w, h, canvasEl, errorHandler) {
             return;
 
         particle.t0 = tickNr;
-        particle.agent_ident = agent.ident;
+        particle.ident = agent.ident;
         particles_per_agent[agent.ident]++;
         particles.push(particle);
     }

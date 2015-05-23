@@ -62,7 +62,7 @@ GridIndex.prototype.add = function(x, y, obj) {
  *    +-----------------+
  *   
  */
-GridIndex.prototype.find = function(x, y, except) {
+GridIndex.prototype.find = function(x, y, exceptIdent) {
     var i0 = Math.floor(x / this.size);
     var j0 = Math.floor(y / this.size);
 
@@ -74,7 +74,7 @@ GridIndex.prototype.find = function(x, y, except) {
         // If we find any node here, we'll do *one* more circle, return the
         // closest of that.
         var exit_afterwards = closest_so_far != null;
-        closest_so_far = this.findClosestIn(x, y, i0, j0, this.searches[k], closest_so_far, except);
+        closest_so_far = this.findClosestIn(x, y, i0, j0, this.searches[k], closest_so_far, exceptIdent);
         if (exit_afterwards) break;
     }
 
@@ -96,7 +96,7 @@ GridIndex.prototype.norm = function(x0, y0, x1, y1) {
 /**
  * Return the closest [x, y, obj], or unchanged if nothing found.
  */
-GridIndex.prototype.findClosestIn = function(x, y, i0, j0, cells, closest_so_far, except) {
+GridIndex.prototype.findClosestIn = function(x, y, i0, j0, cells, closest_so_far, exceptIdent) {
     var closest_len = null;
     if (closest_so_far) {
         closest_len = this.norm(x, y, closest_so_far[0], closest_so_far[1]);
@@ -111,7 +111,7 @@ GridIndex.prototype.findClosestIn = function(x, y, i0, j0, cells, closest_so_far
         for (var k = 0; k < cell.length; k++) {
             var obj = cell[k];
 
-            if (obj[2] === except) continue;
+            if (exceptIdent && obj[2].ident === exceptIdent) continue;
 
             var len = this.norm(x, y, obj[0], obj[1]);
             if (closest_len === null || len < closest_len) {
