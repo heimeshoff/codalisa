@@ -102,44 +102,24 @@ app.get('/m/:file', function(req, res) {
     }).fail(mkErrorHandler(res));
 });
 
-app.get('/m/:file/:x/:y', function(req, res) {
-    matrix_db.load(req.params.file).then(function(matrix) {
-        var coords = { x: parseInt(req.params.x, 10), y: parseInt(req.params.y, 10) };
-        var existing = _.find(matrix.agents, coords);
-        if (!existing) return coords;
-        return existing;
-    }).then(function(agent) {
-        res.json(agent);
-    }).fail(mkErrorHandler(res));
-});
-
-app.post('/m/:file/:x/:y', function(req, res) {
+app.post('/m/:file', function(req, res) {
     // Transactions. Woo!
     matrix_db.load(req.params.file).then(function(matrix) {
-        var coords = { x: parseInt(req.params.x, 10), y: parseInt(req.params.y, 10) };
-        var existing = _.find(matrix.agents, coords);
-        if (!existing) matrix.agents.push(existing = coords);
+        var ident = req.body.ident;
+        var count = req.body.count;
 
-        return script_db.load(req.body.file).then(function(agent) {
-            existing.file = agent.file;
-            existing.title = agent.title;
+        if (typeof count != 'number') throw new Error('count is not a number');
 
-            io.emit('cell-changed', existing);
+        if (!(ident in matrix)) matrix[ident] = 0;
+        matrix[ident] += count;
+        if (matrix[ident] < 0) matrix[ident] = 0;
 
-            return matrix;
-        });
+        return matrix;
     }).then(function(matrix) {
         return matrix_db.save(req.params.file, matrix);
     }).then(function() {
         res.send('OK');
         io.emit('matrix-changed', { changedMatrix: req.params.file });
-    }).fail(mkErrorHandler(res));
-});
-
-app.post('/m/:file', function(req, res) {
-    console.log('Saving changes to ' + req.params.file);
-    matrix_db.save(req.params.file, req.body).then(function() {
-        res.send('OK');
     }).fail(mkErrorHandler(res));
 });
 

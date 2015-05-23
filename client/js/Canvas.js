@@ -27,6 +27,8 @@ var abs_clip = function(x, max) {
     return x;
 }
 
+var TAU = 2 * Math.PI;
+
 /**
  * World is the world we're living in
  */
@@ -66,29 +68,12 @@ var World = function(w, h, canvasEl, errorHandler) {
     /**
      * Make a World object from the perspective of a particular agent
      */
-    var makePerspective = function(agent, signals) {
-        return new Perspective(tickNr, agent, self, closest(agents, agent), closest(particles, agent), physics, signals);
-    };
-
-    /**
-     * Find closest element in list
-     *
-     * FIXME: Need to take world torusness into account
-     */
-    var closest = function(list, agent) {
-        var cvec = null;
-        var clen = 0;
-        for (var k in list) {
-            if (list[k] !== agent) {
-                var d = list[k].pos.minus(agent.pos);
-                var len = d.len();
-                if (!cvec || len < clen) {
-                    cvec = d;
-                    clen = len;
-                }
-            }
-        }
-        return cvec || new Vector(0, 0);
+    var makePerspective = function(agent, signals, indexes) {
+        return new Perspective(
+                tickNr, agent, self,
+                indexes.agents.find(agent.pos.x, agent.pos.y, agent),
+                indexes.particles.find(agent.pos.x, agent.pos.y, agent),
+                physics, signals);
     };
 
     var clear = function() {
@@ -98,6 +83,13 @@ var World = function(w, h, canvasEl, errorHandler) {
 
     var particles_per_agent = { };
 
+    var makeIndexes = function() {
+        return {
+            agents: makeIndex(w, h, 100, agents, true),
+            particles: makeIndex(w, h, 100, particles)
+        };
+    }
+
     /**
      * Make all agents do a thing
      *
@@ -106,11 +98,13 @@ var World = function(w, h, canvasEl, errorHandler) {
      * First tick simultaneously, then move simultaneously.
      */
     self.tick = function(signals) {
+        var indexes = makeIndexes();
+
         tickNr++;
         shuffle(agents);
         for (var k in agents) {
-            var agent = agents[k];
-            var perspective = makePerspective(agent, signals);
+                var agent = agents[k];
+            var perspective = makePerspective(agent, signals, indexes);
             try {
                 agent.tick(perspective.agentView);
             } catch (e) {
@@ -133,7 +127,7 @@ var World = function(w, h, canvasEl, errorHandler) {
         clear();
 
         var t_min = tickNr - physics.FADE_TIME;
-        for (var k in particles) {
+        for (var k = 0; k < particles.length; k++) {
             var alpha_factor = Math.max(0, (particles[k].t0 - t_min) / physics.FADE_TIME);
             particles[k].draw(ctx, alpha_factor);
         }
@@ -143,7 +137,9 @@ var World = function(w, h, canvasEl, errorHandler) {
             particles_per_agent[particles[i].agent_ident]--;
             i++;
         }
-        if (i > 0) particles.splice(0, i);
+        if (i > 0) {
+            particles.splice(0, i);
+        }
     }
 
     self.addAgent = function(agent) {
@@ -223,14 +219,22 @@ var Perspective = function(t, agent, world, closest_agent, closest_particle, phy
     this.agentView = {
         t: t,
         last_pos: agent.pos.minus(agent.last_pos), // FIXME: Torus
-        closest_agent: closest_agent,
-        closest_particle: closest_particle,
+        closest_agent: closest_agent ? closest_agent.pos.minus(agent.pos) : null,
+        closest_particle: closest_particle ? closest_particle.pos.minus(agent.pos) : null,
         turn: function(degrees) {
             agent.v = agent.v.rotate(degrees / 180 * Math.PI);
         },
-        turnTo: function(vec) {
-            var speed = agent.v.len();
-            agent.v = vec.resize(speed);
+        turnTo: function(vec, factor) {
+            if (!vec) return;
+            if (factor !== undefined) {
+                console.log(vec.x, vec.y, deg(vec.angle()));
+                var d = -angle_dist(agent.v.angle(), vec.angle());
+                agent.v = agent.v.rotate(d * factor);
+            }
+            else {
+                var speed = agent.v.len();
+                agent.v = vec.resize(speed);
+            }
         },
         left: function(degrees) {
             this.turn(degrees);
@@ -254,17 +258,18 @@ var Perspective = function(t, agent, world, closest_agent, closest_particle, phy
         signals: Object.create(signals), // Make sure agents can't mess with the source object
 
         // Drop particle
-        drop: function(form, pos, size, color, alpha, rotation) {
+        // If line, pos = x0 and size = x1.
+        drop: function(shape, pos, size, color, alpha, rotation) {
+            shape = shape || 'circle';
             pos = Vector.make(pos);
             if (!pos) pos = new Vector(0, 0);
-            form = form || 'circle';
             size = Vector.make(size);
             if (!size) size = new Vector(10, 10);
             color = color || new Color(0, 0, 0);
 
             if (pos.len() > physics.MAX_DRAW_DISTANCE) pos = pos.resize(physics.MAX_DRAW_DISTANCE);
             if (size.len() > physics.MAX_SIZE) size = size.resize(physics.MAX_SIZE);
-            world.addParticle(agent, new Particle(agent.pos.plus(pos), form, color, size, rotation, alpha));
+            world.addParticle(agent, new Particle(agent.pos.plus(pos), shape, color, size, rotation, alpha));
         },
 
         // Do something every d frames
@@ -289,46 +294,80 @@ var Perspective = function(t, agent, world, closest_agent, closest_particle, phy
 /**
  * A dropped particle, either circle, rectangle or triangle
  */
-var Particle = function(pos, form, color, size, rotation, alpha) {
+var Particle = function(pos, shape, color, size, rotation, alpha) {
     assert(pos instanceof Vector, 'pos not a Vector');
     assert(size instanceof Vector, 'size not a Vector');
     assert(color instanceof Color, 'color not a Color');
 
     this.pos = pos;
-    this.form = form;
+    this.shape = shape;
     this.size = size || new Vector(5, 5);
     this.rotation = rotation || 0;
     this.color = color;
     this.alpha = typeof(alpha) == 'undefined' ? 1 : alpha;
+
+    // We only need to push and pop a transformation matrix if we do rotation
+    // on a shape where that's visible, or uneven scaling on a circle. This
+    // saves a lot of CPU. 
+    this.pushState = ((this.shape == 'rect' || this.shape == 'triangle') && this.rotation != 0)
+                   || (this.shape == 'circle' && this.size.x != this.size.y);
 }
 
 Particle.prototype.draw = function(ctx, alpha_factor) {
     var af = typeof(alpha_factor) == 'undefined' ? 1 : alpha_factor;
-    ctx.save();
-    ctx.fillStyle = this.color.toRGBA(this.alpha * af);
-    ctx.translate(this.pos.x, this.pos.y);
-    ctx.scale(this.size.x, this.size.y);
-    ctx.rotate(this.rotation);
-    if (this.form == 'circle') {
+
+    var pos = this.pos;
+    var size = this.size;
+    if (this.pushState) {
+        ctx.save();
+        ctx.translate(this.pos.x, this.pos.y);
+        ctx.scale(this.size.x, this.size.y);
+        ctx.rotate(this.rotation);
+        // Translation and scale are already encoded in the transformation
+        // matrix
+        pos = new Vector(0, 0);
+        size = new Vector(1, 1);
+    }
+
+    var shape = this.shape; // Micro-optimization!
+
+    if (shape == 'line')
+        ctx.strokeStyle = this.color.toRGBA(this.alpha * af);
+    else
+        // These parameters only for non-lines
+        ctx.fillStyle = this.color.toRGBA(this.alpha * af);
+
+    if (shape == 'line') {
         ctx.beginPath();
-        ctx.arc(0, 0, 0.5, 0, 2 * Math.PI, true);
+        ctx.moveTo(pos.x, pos.y);
+        ctx.lineTo(pos.x + size.x, pos.y + size.y);
+        ctx.stroke();
+        ctx.closePath();
+    }
+    else if (shape == 'circle') {
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, size.x / 2, 0, TAU, true);
         ctx.fill();
         ctx.closePath();
     }
-    else if (this.form == 'triangle') {
+    else if (shape == 'triangle') {
         ctx.beginPath();
-        var twoThirds = 2/3;
-        var oneThirds = 1/3;
-        ctx.moveTo(0, -twoThirds);
-        ctx.lineTo(-0.5, oneThirds);
-        ctx.lineTo( 0.5, oneThirds);
+        var twoThirdsY = 2/3 * size.y;
+        var oneThirdsY = 1/3 * size.y;
+
+        ctx.moveTo(pos.x, -twoThirdsY);
+        ctx.lineTo(pos.x + -0.5 * size.x, oneThirdsY);
+        ctx.lineTo(pos.x +  0.5 * size.x, oneThirdsY);
         ctx.closePath();
         ctx.fill();
     }
     else {
-        ctx.fillRect(-0.5, -0.5, 1, 1);
+        ctx.fillRect(pos.x - 0.5 * size.x, pos.y - 0.5 * size.y, size.x, size.y);
     }
-    ctx.restore();
+
+    if (this.pushState) {
+        ctx.restore();
+    }
 }
 
 var MouseAgent = function(element, ident) {
@@ -344,6 +383,7 @@ var MouseAgent = function(element, ident) {
         var my = (ev.pageY - elOfs.top) * Yaspect;
 
         self.pos = new Vector(mx, my);
+        self.v = new Vector(0, 0);
     });
 }
 MouseAgent.prototype = new Agent();
@@ -356,7 +396,7 @@ MouseAgent.prototype = new Agent();
  *
  * We're targeting a virtual FPS 
  */
-var Simulation = function(world, fps, reportFps) {
+var Simulation = function(world, fps, reportFps, times) {
     var signals = {};
     var t0;
     var tick0;
@@ -369,6 +409,8 @@ var Simulation = function(world, fps, reportFps) {
         if (reportFps) reportFps(frames);
         frames = 0;
     }.bind(this), 1000);
+
+    var self = this;
 
     var driveTick = function(t) {
         // We may have multiple world ticks per invocation
@@ -384,7 +426,11 @@ var Simulation = function(world, fps, reportFps) {
             frames++;
         }
 
-        if (fps == 0)
+        if (times !== undefined) {
+            if (times-- == 0) self.stop();
+        }
+
+        if (fps == 0 && running)
             window.requestAnimationFrame(driveTick);
     }
 
@@ -406,7 +452,7 @@ var Simulation = function(world, fps, reportFps) {
         if (!running) return;
         running = false;
 
-        if (!burnBabyBurn) 
+        if (fps != 0) 
             window.clearInterval(timer);
     };
 

@@ -1,4 +1,11 @@
 /**
+ * This is for load testing
+ */
+var N = 1; // 20
+var fps = 0; // 0
+var times = undefined;
+
+/**
  * Log the error to the 'errors' array if the error is from the agent
  * we're editing, or the "currently under edit" agent.
  */
@@ -11,7 +18,10 @@ var canvasEl = document.getElementById('preview');
 var world = new World(900, 900, canvasEl, addErrorToLog);
 
 //var mouseDrawing = new MouseDrawing();
-world.addAgent(new Agent('user'));
+for (var i = 0; i < N; i++) {
+    world.addAgent(new Agent('user' + (i > 0 ? i : '')));
+}
+
 world.addAgent(new MouseAgent(canvasEl, 'mouse'));
 
 var models = {
@@ -30,7 +40,9 @@ var models = {
     },
 
     reinit: function() {
-        world.reinit('user');
+        for (var i = 0; i < N; i++) {
+            world.reinit('user' + (i > 0 ? i : ''));
+        }
     },
 
     preview: function() {
@@ -40,7 +52,11 @@ var models = {
         // This is like a horribly crappy way to do this but I don't know the way
         // around my code anymore :(.
         var a = agentControlFromScript(this.activeScript.draft(), this.activeScript.file());
-        if (a) world.agent('user').setControl(a);
+        if (a) {
+            for (var i = 0; i < N; i++) {
+                world.agent('user' + (i > 0 ? i : '')).setControl(a);
+            }
+        }
         var f = this.activeScript.file();
 
         var self = this;
@@ -118,7 +134,7 @@ socket.on('scripts-changed', function(msg) { models.scripts.refresh(); });
 socket.on('signals', function(signals) { SimRunner.setSignals(signals); });
 socket.on('script-error', function(err) { addErrorToLog(err.file, err.error); });
 
-var sim = new Simulation(world, 0, models.fps);
+var sim = new Simulation(world, fps, models.fps, times);
 sim.start();
 
 

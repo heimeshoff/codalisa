@@ -34,6 +34,14 @@ Vector.prototype.len = function() {
     return Math.sqrt(this.x * this.x + this.y * this.y);
 }
 
+/**
+ * The square of the length. Use this if you want to avoid
+ * calculating the square root.
+ */
+Vector.prototype.len2 = function() {
+    return this.x * this.x + this.y * this.y;
+}
+
 Vector.prototype.times = function(f) {
     return new Vector(this.x * f, this.y * f);
 }
@@ -70,3 +78,39 @@ Vector.prototype.rotate = function(a) {
    var yy = this.x * Math.sin(a) + this.y * Math.cos(a);
    return new Vector(xx, yy);
 }
+
+/**
+ * Return the angle of this vector
+ */
+Vector.prototype.angle = function() {
+    if (Math.abs(this.x) < 0.00001) return 0.5 * Math.PI;
+    return Math.atan(this.y / this.x);
+}
+
+function clockwise(src, tgt) {
+    return ((tgt - src + 2 * Math.PI) % (2 * Math.PI) > Math.PI);
+}
+
+function angle_dist(src, tgt) {
+    if ((tgt - src + 2 * Math.PI) % (2 * Math.PI) > Math.PI) {
+        if (src > tgt) 
+            return tgt - src;
+        else
+            return tgt - (src + 2 * Math.PI);
+    }
+    else {
+        if (tgt > src) 
+            return tgt - src;
+        else
+            return tgt - (src - 2 * Math.PI);
+    }
+}
+
+function rad(d) {
+  return (d * Math.PI) / 180;
+}
+
+function deg(r) {
+  return r / (2 * Math.PI) * 360;
+}
+
