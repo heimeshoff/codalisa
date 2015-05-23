@@ -90,9 +90,11 @@ var ActiveScript = function() {
     self.isDraft = ko.pureComputed(function() { return page() == 'draft'; });
     self.isPublished = ko.pureComputed(function() { return page() == 'published'; });
     self.isGrid = ko.pureComputed(function() { return page() == 'grid'; });
+    self.isBoard = ko.pureComputed(function() { return page() == 'board'; });
     self.readOnly = ko.pureComputed(function() { return !self.isDraft() || !self.file(); });
     self.setDraft = function() { page('draft'); }
     self.setPublished = function() { page('published'); }
+    self.setBoard = function() { page('board'); }
     self.setGrid = function() { page('grid'); }
     self.viewScript = ko.observable();
     self.version = ko.observable();

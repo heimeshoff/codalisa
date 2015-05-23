@@ -17,6 +17,9 @@ var mkErrorHandler = function(res) {
 
 var jsdb = require('./jsdb');
 var script_db = jsdb.open(jsdb.Script, '../scripts');
+var board_db = jsdb.open(jsdb.Board, '../boards');
+
+var MAX_SAME_AGENT = 5;
 
 /*
 signals.start(function(signals) {
@@ -83,43 +86,41 @@ app.post('/s/:file/error', function(req, res) {
     }).fail(mkErrorHandler(res));
 });
 
-app.get('/m', function(req, res) {
-    matrix_db.list().then(function(files) {
+app.get('/b', function(req, res) {
+    board_db.list().then(function(files) {
         res.json(files);
     }).fail(mkErrorHandler(res));
 });
 
-app.post('/m/create', function(req, res) {
-    matrix_db.create(defaults.newScript()).then(function(name) {
-        res.send(name);
-        io.emit('matrix-changed', { file: req.params.file });
-    }).fail(mkErrorHandler(res));
-});
-
-app.get('/m/:file', function(req, res) {
-    matrix_db.load(req.params.file).then(function(file) {
+app.get('/b/:file', function(req, res) {
+    board_db.load(req.params.file).then(function(file) {
         res.json(file);
     }).fail(mkErrorHandler(res));
 });
 
-app.post('/m/:file', function(req, res) {
+app.post('/b/:file', function(req, res) {
     // Transactions. Woo!
-    matrix_db.load(req.params.file).then(function(matrix) {
+    board_db.load(req.params.file).then(function(board) {
         var ident = req.body.ident;
         var count = req.body.count;
+        var name = req.body.name;
 
-        if (typeof count != 'number') throw new Error('count is not a number');
+        var count = parseInt(count, 10);
 
-        if (!(ident in matrix)) matrix[ident] = 0;
-        matrix[ident] += count;
-        if (matrix[ident] < 0) matrix[ident] = 0;
+        if (!(ident in board.agents)) board.agents[ident] = { count: 0 };
+        var agent = board.agents[ident];
+        agent.ident = ident;
+        agent.count += count;
+        if (name) agent.name = name;
+        if (agent.count < 0) agent.count = 0;
+        if (agent.count > MAX_SAME_AGENT) agent.count = MAX_SAME_AGENT;
 
-        return matrix;
-    }).then(function(matrix) {
-        return matrix_db.save(req.params.file, matrix);
+        return board;
+    }).then(function(board) {
+        return board_db.save(req.params.file, board);
     }).then(function() {
         res.send('OK');
-        io.emit('matrix-changed', { changedMatrix: req.params.file });
+        io.emit('board-changed', { changedBoard: req.params.file });
     }).fail(mkErrorHandler(res));
 });
 

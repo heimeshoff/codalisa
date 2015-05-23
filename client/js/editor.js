@@ -2,7 +2,7 @@
  * This is for load testing
  */
 var N = 1; // 20
-var fps = 0; // 0
+var fps = 5; // 0
 var times = undefined;
 
 /**
@@ -27,6 +27,7 @@ world.addAgent(new MouseAgent(canvasEl, 'mouse'));
 var models = {
     scripts: new Scripts(),
     activeScript: new ActiveScript(),
+    board: new Board('default'),
 
     useVim: ko.observable(false),
     saving: ko.observable(false),
@@ -36,6 +37,7 @@ var models = {
 
     publish: function() {
         this.activeScript.publish();
+        this.activeScript.setPublished();
         this.preview();
     },
 
@@ -78,17 +80,6 @@ var models = {
         this.previewTimer = window.setTimeout(this.preview.bind(this), 500);
     },
 
-    /**
-     * Make the active script occupy the given cell
-     *
-     * Is not bound, so can't use this.
-     */
-    occupy: function(cell) {
-        if (models.activeScript.file()) {
-            models.matrix.occupy(cell, models.activeScript.file());
-        }
-    },
-
     fps: ko.observable(0)
 };
 
@@ -98,7 +89,7 @@ initVimPreference(editor, models.useVim);
 editor.focus();
 
 /**
- * Handle change of selected script
+ * Handle change of selected script (load it)
  */
 models.scripts.selected.subscribe(function(name) {
     // When the selected item changes, quickly save the current script :)
@@ -106,6 +97,8 @@ models.scripts.selected.subscribe(function(name) {
     if (window.history.replaceState) {
         window.history.replaceState(null, null, '#' + name);
     }
+
+    models.board.setCurrentScript(name);
 
     if (!name)
         models.activeScript.clear();
@@ -124,19 +117,19 @@ window.setInterval(function() {
 }, 5000);
 */
 
-
 ko.applyBindings(models);
 models.scripts.refresh();
+models.board.load();
 
 var socket = io();
 
 socket.on('scripts-changed', function(msg) { models.scripts.refresh(); });
 socket.on('signals', function(signals) { SimRunner.setSignals(signals); });
 socket.on('script-error', function(err) { addErrorToLog(err.file, err.error); });
+socket.on('board-changed', function(board) { models.board.load(); });
 
 var sim = new Simulation(world, fps, models.fps, times);
 sim.start();
-
 
 /**
  * Make the canvas' actual aspect corresponding to its virtual surface aspect

@@ -259,7 +259,7 @@ var Perspective = function(t, agent, world, closest_agent, closest_particle, phy
 
         // Drop particle
         // If line, pos = x0 and size = x1.
-        drop: function(shape, pos, size, color, alpha, rotation) {
+        drop: function(shape, pos, size, color, alpha, rotation, borderColor) {
             shape = shape || 'circle';
             pos = Vector.make(pos);
             if (!pos) pos = new Vector(0, 0);
@@ -269,7 +269,7 @@ var Perspective = function(t, agent, world, closest_agent, closest_particle, phy
 
             if (pos.len() > physics.MAX_DRAW_DISTANCE) pos = pos.resize(physics.MAX_DRAW_DISTANCE);
             if (size.len() > physics.MAX_SIZE) size = size.resize(physics.MAX_SIZE);
-            world.addParticle(agent, new Particle(agent.pos.plus(pos), shape, color, size, rotation, alpha));
+            world.addParticle(agent, new Particle(agent.pos.plus(pos), shape, color, size, rotation, alpha, borderColor));
         },
 
         // Do something every d frames
@@ -294,7 +294,7 @@ var Perspective = function(t, agent, world, closest_agent, closest_particle, phy
 /**
  * A dropped particle, either circle, rectangle or triangle
  */
-var Particle = function(pos, shape, color, size, rotation, alpha) {
+var Particle = function(pos, shape, color, size, rotation, alpha, borderColor) {
     assert(pos instanceof Vector, 'pos not a Vector');
     assert(size instanceof Vector, 'size not a Vector');
     assert(color instanceof Color, 'color not a Color');
@@ -305,6 +305,7 @@ var Particle = function(pos, shape, color, size, rotation, alpha) {
     this.rotation = rotation || 0;
     this.color = color;
     this.alpha = typeof(alpha) == 'undefined' ? 1 : alpha;
+    this.borderColor = borderColor;
 
     // We only need to push and pop a transformation matrix if we do rotation
     // on a shape where that's visible, or uneven scaling on a circle. This
@@ -333,9 +334,11 @@ Particle.prototype.draw = function(ctx, alpha_factor) {
 
     if (shape == 'line')
         ctx.strokeStyle = this.color.toRGBA(this.alpha * af);
-    else
+    else {
         // These parameters only for non-lines
         ctx.fillStyle = this.color.toRGBA(this.alpha * af);
+        if (this.borderColor) ctx.strokeStyle = this.borderColor.toRGBA(this.alpha * af);
+    }
 
     if (shape == 'line') {
         ctx.beginPath();
@@ -348,6 +351,7 @@ Particle.prototype.draw = function(ctx, alpha_factor) {
         ctx.beginPath();
         ctx.arc(pos.x, pos.y, size.x / 2, 0, TAU, true);
         ctx.fill();
+        if (this.borderColor) ctx.stroke();
         ctx.closePath();
     }
     else if (shape == 'triangle') {
@@ -360,9 +364,11 @@ Particle.prototype.draw = function(ctx, alpha_factor) {
         ctx.lineTo(pos.x +  0.5 * size.x, oneThirdsY);
         ctx.closePath();
         ctx.fill();
+        if (this.borderColor) ctx.stroke();
     }
     else {
         ctx.fillRect(pos.x - 0.5 * size.x, pos.y - 0.5 * size.y, size.x, size.y);
+        if (this.borderColor) ctx.strokeRect(pos.x - 0.5 * size.x, pos.y - 0.5 * size.y, size.x, size.y);
     }
 
     if (this.pushState) {

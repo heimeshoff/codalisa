@@ -27,9 +27,9 @@ module.exports = {
     },
 
     /**
-     * Model for the display matrix
+     * Model for the display board
      */
-    Matrix: {
+    Board: {
         pickle: function(obj) {
             return Q.resolve(obj);
         },

@@ -115,3 +115,8 @@ table.matrix-table td {
     margin-top: -16px;
     color: #ddd;
 }
+
+.small {
+    font-size: 0.8em;
+    line-height: 1.3;
+}

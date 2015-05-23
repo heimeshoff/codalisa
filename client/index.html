@@ -32,16 +32,54 @@
                                 <span class="success round label" title="Script has unpublished changes" data-bind="visible: isUnpublished() && !isDirty()">pub</span>
                             </a></li>
                             <li><a href="#" class="secondary button" data-bind="css: { active: isPublished }, click: setPublished">Published</a></li>
+                            <li><a href="#" class="secondary button" data-bind="css: { active: isBoard }, click: setBoard">Big Screen</a></li>
                             <li style="padding-left: 20px;">
                                 <input type="checkbox" data-bind="checked: $parent.useVim" id="useVim" > 
                                 <label for="useVim"> Vim mode</label>
                             </li>
                         </ul>
                     </div>
+                    <!-- Controls for adding/removing items -->
+                    <div data-bind="visible: activeScript.isPublished">
+                        <!-- ko with: board.currentScriptOnBoard -->
+                        <div class="clearfix" data-bind="visible: count == 0">
+                            <div class="left" style="margin-top: 5px;">This script is not on the Big Screen.</div>
+                            <div class="right"><a class="tiny round button" data-bind="click: function() { change(1, $parent.activeScript.title()) }">Add it!</a></div>
+                        </div>
+                        <div class="clearfix" data-bind="visible: count != 0">
+                            <div class="left" style="margin-top: 5px;">This script is on the Big Screen <span data-bind="text: count"></span> times.</div>
+                            <div class="right">
+                                <a class="tiny round alert button" data-bind="click: function() { change(-1, $parent.activeScript.title()) }">Less</a>
+                                <a class="tiny round success button" data-bind="click: function() { change(1, $parent.activeScript.title()) }">More</a>
+                            </div>
+                        </div>
+
+                        <!-- /ko -->
+                    </div>
+                    <!-- Editor -->
                     <div class="v-rest" data-bind="visible: activeScript.isPublished() || activeScript.isDraft()">
                         <div id="editor" class="editor"></div>
                     </div>
-                    <div style="text-align: right; height: 45px;">
+                    <div class="v-rest" data-bind="visible: activeScript.isBoard">
+                        <p class="small">This page shows all the agents that are currently on the big screen. Add
+                            or remove instances of this agent on the <em>Published</em> tab.</p>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>x on screen</th>
+                                </tr>
+                            </thead>
+                            <tbody data-bind="foreach: board.agents">
+                                <tr>
+                                    <td data-bind="text: name"></td>
+                                    <td data-bind="text: count"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        </table>
+                    </div>
+                    <div style="text-align: right; height: 45px;" data-bind="visible: activeScript.isDraft">
                         <img src="res/spinner.gif" style="margin-top: 10px; margin-right: 30px;" data-bind="visible: saving">
                         <a href="#" style="margin-right: 20px;" data-bind="click: reinit, visible: !saving()">Re-setup</a>
                         <a href="#" class="radius button" data-bind="click: publish, visible: !saving()">Publish</a>
@@ -96,11 +134,11 @@
         <script src="js/palette.js"></script>
         <script src="js/Vector.js"></script>
         <script src="js/Agent.js"></script>
+        <script src="js/Board.js"></script>
         <script src="js/GridIndex.js"></script>
         <script src="js/Canvas.js"></script>
         <script src="js/LocalStorage.js"></script>
         <script src="js/scripts.js"></script>
-        <script src="js/matrix.js"></script>
         <script src="js/editor.js"></script>
     </body>
 </html>
