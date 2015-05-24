@@ -24,10 +24,14 @@ function angle_dist_deg(s, t) {
 }
 
 function approxEqual(assert, actual, expected) {
-    if (Math.abs(actual - expected) < 0.00001)
-        assert.ok(true);
-    else
-        assert.equal(actual, expected);
+  if (Math.abs(actual - expected) < 0.00001)
+    assert.ok(true);
+  else
+    assert.equal(actual, expected);
+}
+
+function vectorEqual(assert, actual, expected) {
+  assert.equal(String(actual), String(expected));
 }
 
 QUnit.test('DirTest', function(assert) {
@@ -51,3 +55,17 @@ QUnit.test('AngleTest', function(assert) {
   approxEqual(assert, angle_dist_deg(270, 180), -90);
 });
 
+QUnit.test('TorusTest', function(assert) {
+  var w = new Vector(100, 100);
+
+  var check = function(x, y, expected) {
+    assert.equal(String(x.torus_minus(y, w)), String(expected));
+  }
+
+  check(new Vector(90, 90), new Vector(80, 80), new Vector(10, 10));
+  check(new Vector(90, 90), new Vector(10, 10), new Vector(-20, -20));
+  check(new Vector(10, 10), new Vector(90, 90), new Vector(20, 20));
+
+  var gi = new GridIndex(100, 100, 10);
+  assert.equal(gi.norm(90, 10, 10, 10), 20 * 20); // Squared distance
+});

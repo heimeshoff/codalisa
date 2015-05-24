@@ -35,6 +35,26 @@ Vector.prototype.len = function() {
 }
 
 /**
+ * Vector minus on a torus
+ *
+ * Will return the shortest direction vector.
+ */
+Vector.prototype.torus_minus = function(v, world) {
+    var d = this.minus(v);
+    if (d.x > world.x / 2)
+        d.x -= world.x;
+    else if (d.x < -world.x / 2)
+        d.x += world.x;
+
+    if (d.y > world.y / 2)
+        d.y -= world.y;
+    else if (d.y < -world.y / 2)
+        d.y += world.y;
+
+    return d;
+}
+
+/**
  * The square of the length. Use this if you want to avoid
  * calculating the square root.
  */
@@ -69,7 +89,6 @@ Vector.prototype.mod = function(v) {
     return new Vector(xx, yy);
 }
 
-
 /**
  * Rotate by an amount of radians
  */
@@ -85,6 +104,10 @@ Vector.prototype.rotate = function(a) {
 Vector.prototype.angle = function() {
     if (Math.abs(this.x) < 0.00001) return 0.5 * Math.PI;
     return Math.atan(this.y / this.x);
+}
+
+Vector.prototype.toString = function() {
+    return '(' + this.x  + ', ' + this.y + ')';
 }
 
 function clockwise(src, tgt) {

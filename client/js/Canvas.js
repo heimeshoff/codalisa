@@ -42,8 +42,7 @@ var World = function(w, h, canvasEl, errorHandler) {
     physics.MAX_PARTICLES_PER_AGENT = physics.FADE_TIME;  // One particle per frame ought to be allowed
     physics.MAX_DRAW_DISTANCE = 100;
     physics.MAX_SIZE = 100;
-
-    var worldSize = new Vector(w, h);
+    physics.WORLD = new Vector(w, h);
 
     self.virtual_fps = physics.VFPS;
 
@@ -116,7 +115,7 @@ var World = function(w, h, canvasEl, errorHandler) {
 
         for (var k in agents) {
             agents[k].move(physics.VFPS);
-            agents[k].pos = agents[k].pos.mod(worldSize);
+            agents[k].pos = agents[k].pos.mod(physics.WORLD);
         }
     }
 
@@ -219,16 +218,15 @@ var Perspective = function(t, agent, world, closest_agent, closest_particle, phy
      */
     this.agentView = {
         t: t,
-        last_pos: agent.pos.minus(agent.last_pos), // FIXME: Torus
-        closest_agent: closest_agent ? closest_agent.pos.minus(agent.pos) : null,
-        closest_particle: closest_particle ? closest_particle.pos.minus(agent.pos) : null,
+        last_pos: agent.pos.torus_minus(agent.last_pos, physics.WORLD),
+        closest_agent: closest_agent ? closest_agent.pos.torus_minus(agent.pos, physics.WORLD) : null,
+        closest_particle: closest_particle ? closest_particle.pos.torus_minus(agent.pos, physics.WORLD) : null,
         turn: function(degrees) {
             agent.v = agent.v.rotate(degrees / 180 * Math.PI);
         },
         turnTo: function(vec, factor) {
             if (!vec) return;
             if (factor !== undefined) {
-                console.log(vec.x, vec.y, deg(vec.angle()));
                 var d = -angle_dist(agent.v.angle(), vec.angle());
                 agent.v = agent.v.rotate(d * factor);
             }
