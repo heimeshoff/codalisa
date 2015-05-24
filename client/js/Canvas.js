@@ -146,6 +146,7 @@ var World = function(w, h, canvasEl, errorHandler) {
         assert(agent instanceof Agent, 'Not an agent');
         agents.push(agent);
         self.reinit(agent.ident);
+        return agent;
     }
 
     self.reinit = function(ident) {

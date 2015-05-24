@@ -92,8 +92,6 @@ editor.focus();
  * Handle change of selected script (load it)
  */
 models.scripts.selected.subscribe(function(name) {
-    // When the selected item changes, quickly save the current script :)
-    //models.activeScript.save(models.scripts, editor.getValue());
     if (window.history.replaceState) {
         window.history.replaceState(null, null, '#' + name);
     }
@@ -110,12 +108,13 @@ models.scripts.selected.subscribe(function(name) {
 
 models.scripts.selected(window.location.hash.substr(1));
 
-// Save changes to server periodically
-/*
-window.setInterval(function() {
-    models.activeScript.save(models.scripts, editor.getValue());
-}, 5000);
-*/
+/**
+ * Clicking a link to another script
+ */
+window.onhashchange = function() {
+    models.scripts.selected(window.location.hash.substr(1));
+    models.activeScript.setDraft();
+}
 
 ko.applyBindings(models);
 models.scripts.refresh();
@@ -124,7 +123,7 @@ models.board.load();
 var socket = io();
 
 socket.on('scripts-changed', function(msg) { models.scripts.refresh(); });
-socket.on('signals', function(signals) { SimRunner.setSignals(signals); });
+socket.on('signals', function(signals) { sim.setSignals(signals); });
 socket.on('script-error', function(err) { addErrorToLog(err.file, err.error); });
 socket.on('board-changed', function(board) { models.board.load(); });
 

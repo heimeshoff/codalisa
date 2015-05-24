@@ -72,7 +72,14 @@
                             </thead>
                             <tbody data-bind="foreach: board.agents">
                                 <tr>
-                                    <td data-bind="text: name"></td>
+                                    <td>
+                                        <!-- ko if: ident != $parent.activeScript.file() -->
+                                        <a data-bind="text: name, attr: { href: '#' + ident }"></a>
+                                        <!-- /ko -->
+                                        <!-- ko ifnot: ident != $parent.activeScript.file() -->
+                                        <span style="font-weight: bold;" data-bind="text: name"></span>
+                                        <!-- /ko -->
+                                    </td>
                                     <td data-bind="text: count"></td>
                                 </tr>
                             </tbody>
@@ -139,6 +146,7 @@
         <script src="js/Canvas.js"></script>
         <script src="js/LocalStorage.js"></script>
         <script src="js/scripts.js"></script>
+
         <script src="js/editor.js"></script>
     </body>
 </html>
