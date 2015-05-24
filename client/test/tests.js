@@ -23,6 +23,13 @@ function angle_dist_deg(s, t) {
   return deg(angle_dist(rad(s), rad(t)));
 }
 
+function approxEqual(assert, actual, expected) {
+    if (Math.abs(actual - expected) < 0.00001)
+        assert.ok(true);
+    else
+        assert.equal(actual, expected);
+}
+
 QUnit.test('DirTest', function(assert) {
   assert.equal(clockwise_deg(90, 135), false);
   assert.equal(clockwise_deg(90, 45), true);
@@ -34,13 +41,13 @@ QUnit.test('DirTest', function(assert) {
 });
 
 QUnit.test('AngleTest', function(assert) {
-  assert.equal(angle_dist_deg(90, 135), 45);
-  assert.equal(angle_dist_deg(90, 45), -45);
-  assert.equal(angle_dist_deg(10, 55), 45);
-  assert.equal(angle_dist_deg(10, 325), -45);
-  assert.equal(angle_dist_deg(325, 10), 45);
-  assert.equal(angle_dist_deg(10, 180), 170);
-  assert.equal(angle_dist_deg(10, 200), -170);
-  assert.equal(angle_dist_deg(270, 180), -90);
+  approxEqual(assert, angle_dist_deg(90, 135), 45);
+  approxEqual(assert, angle_dist_deg(90, 45), -45);
+  approxEqual(assert, angle_dist_deg(10, 55), 45);
+  approxEqual(assert, angle_dist_deg(10, 325), -45);
+  approxEqual(assert, angle_dist_deg(325, 10), 45);
+  approxEqual(assert, angle_dist_deg(10, 180), 170);
+  approxEqual(assert, angle_dist_deg(10, 200), -170);
+  approxEqual(assert, angle_dist_deg(270, 180), -90);
 });
 
