@@ -2,7 +2,7 @@
  * This is for load testing
  */
 var N = 1; // 20
-var fps = 5; // 0
+var fps = 10; // 0
 var times = undefined;
 
 /**

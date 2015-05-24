@@ -207,7 +207,7 @@ var World = function(w, h, canvasEl, errorHandler) {
  * - Draw line or particle
  */
 var Perspective = function(t, agent, world, closest_agent, closest_particle, physics, signals) {
-    var agent_pos = agent.pos;
+    if (!('last_pos' in agent.data)) agent.data.last_pos = agent.pos;
 
     // Using this counter, we can identify subsequent hz
     // statements, so users don't need to give them names.
@@ -218,11 +218,15 @@ var Perspective = function(t, agent, world, closest_agent, closest_particle, phy
      */
     this.agentView = {
         t: t,
-        last_pos: agent.pos.torus_minus(agent.last_pos, physics.WORLD),
+        last_pos: agent.pos.torus_minus(agent.data.last_pos, physics.WORLD),
+        remember_pos: function() {
+            agent.data.last_pos = agent.pos;
+        },
         closest_agent: closest_agent ? closest_agent.pos.torus_minus(agent.pos, physics.WORLD) : null,
         closest_particle: closest_particle ? closest_particle.pos.torus_minus(agent.pos, physics.WORLD) : null,
         turn: function(degrees) {
-            agent.v = agent.v.rotate(degrees / 180 * Math.PI);
+            // Note: degrees other way around because y axis inverted
+            agent.v = agent.v.rotate(-degrees / 180 * Math.PI);
         },
         turnTo: function(vec, factor) {
             if (!vec) return;
@@ -285,6 +289,10 @@ var Perspective = function(t, agent, world, closest_agent, closest_particle, phy
 
         hz: function(d, name) {
             return this.every(Math.max(physics.VFPS / d, 1), name);
+        },
+
+        periodic: function(d) {
+            return Math.floor(t / (d * physics.VFPS)) % 2 == 0;
         }
     };
 };

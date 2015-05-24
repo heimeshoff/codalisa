@@ -40,6 +40,7 @@ var GridIndex = function(w, h, size, log) {
 }
 
 GridIndex.prototype.add = function(x, y, obj) {
+    if (isNaN(x) || isNaN(y)) return;
     if (x < 0 || x >= this.w || y < 0 || y >= this.h) return;
 
     var i = Math.floor(x / this.size);
