@@ -69,3 +69,44 @@ QUnit.test('TorusTest', function(assert) {
   var gi = new GridIndex(100, 100, 10);
   assert.equal(gi.norm(90, 10, 10, 10), 20 * 20); // Squared distance
 });
+
+QUnit.test('AngleDistTest', function(assert) {
+  // Right turns (in normal coord system at least)
+  approxEqual(assert, deg(angle_dist(rad(270), rad(180))), -90);
+  approxEqual(assert, deg(angle_dist(rad(10), rad(325))), -45);
+
+  // Left turns
+  approxEqual(assert, deg(angle_dist(rad(10), rad(55))), 45);
+  approxEqual(assert, deg(angle_dist(rad(300), rad(10))), 70);
+});
+
+QUnit.test('VectorAngleTest', function(assert) {
+  approxEqual(assert, deg(new Vector(1, 0).angle()), 0);
+  approxEqual(assert, deg(new Vector(1, 1).angle()), 45);
+  approxEqual(assert, deg(new Vector(1, -1).angle()), 315);
+  approxEqual(assert, deg(new Vector(-33, 59).angle()), 119.21924);
+});
+
+QUnit.test('RotateTowardsTest', function(assert) {
+  for (var i = 0; i < 30; i++) {
+    var v1 = new Vector(Math.random() * 10, Math.random() * 10);
+    var v2 = new Vector(Math.random() * 10, Math.random() * 10);
+
+    var d = angle_dist(v1.angle(), v2.angle());
+    var v3 = v1.rotate(d);
+
+    approxEqual(assert, v3.angle(), v2.angle());
+  }
+});
+
+QUnit.test('RotateHalfwayTowardsTest', function(assert) {
+  for (var i = 0; i < 30; i++) {
+    var v1 = new Vector(Math.random() * 10, Math.random() * 10);
+    var v2 = new Vector(Math.random() * 10, Math.random() * 10);
+
+    var d = angle_dist(v1.angle(), v2.angle());
+    var v3 = v1.rotate(d * 0.5);
+
+    approxEqual(assert, v3.angle(), (v2.angle() + v1.angle()) / 2);
+  }
+});

@@ -27,8 +27,6 @@ var abs_clip = function(x, max) {
     return x;
 }
 
-var TAU = 2 * Math.PI;
-
 /**
  * World is the world we're living in
  */
@@ -37,8 +35,9 @@ var World = function(w, h, canvasEl, errorHandler) {
 
     var physics = {};
     physics.MAX_SPEED = 300; // Pixels per second
+    physics.MIN_SPEED = 50; // pps
     physics.VFPS = 60;
-    physics.FADE_TIME = physics.VFPS * 10,
+    physics.FADE_TIME = physics.VFPS * 10;
     physics.MAX_PARTICLES_PER_AGENT = physics.FADE_TIME;  // One particle per frame ought to be allowed
     physics.MAX_DRAW_DISTANCE = 100;
     physics.MAX_SIZE = 100;
@@ -152,8 +151,9 @@ var World = function(w, h, canvasEl, errorHandler) {
         var agent = self.agent(ident);
         // Start at a random position & offset
         agent.v = Vector.fromPolar(
-            Math.random() * physics.MAX_SPEED,
+            Math.random() * (physics.MAX_SPEED - physics.MIN_SPEED),
             Math.random() * Math.PI * 2);
+        agent.v = agent.v.resize(agent.v.len() + physics.MIN_SPEED);
         agent.pos = new Vector(
             Math.random() * w,
             Math.random() * h);
@@ -218,6 +218,7 @@ var Perspective = function(t, agent, world, closest_agent, closest_particle, phy
      */
     this.agentView = {
         t: t,
+        v: agent.v,
         last_pos: agent.pos.torus_minus(agent.data.last_pos, physics.WORLD),
         remember_pos: function() {
             agent.data.last_pos = agent.pos;
@@ -231,7 +232,7 @@ var Perspective = function(t, agent, world, closest_agent, closest_particle, phy
         turnTo: function(vec, factor) {
             if (!vec) return;
             if (factor !== undefined) {
-                var d = -angle_dist(agent.v.angle(), vec.angle());
+                var d = angle_dist(agent.v.angle(), vec.angle());
                 agent.v = agent.v.rotate(d * factor);
             }
             else {
@@ -468,6 +469,13 @@ var Simulation = function(world, fps, reportFps, times) {
         if (fps != 0) 
             window.clearInterval(timer);
     };
+
+    this.toggle = function() {
+        if (running)
+            this.stop();
+        else
+            this.start();
+    }
 
     this.setSignals = function(sigs) {
         signals = sigs || {};

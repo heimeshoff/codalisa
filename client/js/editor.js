@@ -141,3 +141,13 @@ function updateCanvasSize() {
 }
 updateCanvasSize();
 $(window).resize(updateCanvasSize);
+
+
+/*
+// For debuggin'
+document.onkeydown = function(ev) {
+  if (ev.keyCode == 66) {
+    sim.toggle();
+  }
+}
+*/

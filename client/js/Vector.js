@@ -1,5 +1,5 @@
 /**
- * Yep, vector classes.
+ * Yep, vector class
  */
 
 function Vector(x, y) {
@@ -33,6 +33,8 @@ Vector.prototype.minus = function(v) {
 Vector.prototype.len = function() {
     return Math.sqrt(this.x * this.x + this.y * this.y);
 }
+
+var TAU = 2 * Math.PI;
 
 /**
  * Vector minus on a torus
@@ -103,7 +105,8 @@ Vector.prototype.rotate = function(a) {
  */
 Vector.prototype.angle = function() {
     if (Math.abs(this.x) < 0.00001) return 0.5 * Math.PI;
-    return Math.atan(this.y / this.x);
+    var d = Math.atan2(this.y, this.x);
+    return d < 0 ? d + TAU : d;
 }
 
 Vector.prototype.toString = function() {
@@ -119,13 +122,13 @@ function angle_dist(src, tgt) {
         if (src > tgt) 
             return tgt - src;
         else
-            return tgt - (src + 2 * Math.PI);
+            return tgt - src - 2 * Math.PI;
     }
     else {
         if (tgt > src) 
             return tgt - src;
         else
-            return tgt - (src - 2 * Math.PI);
+            return tgt - src + 2 * Math.PI;
     }
 }
 
