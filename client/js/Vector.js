@@ -72,8 +72,10 @@ Vector.prototype.times = function(f) {
  * Resize the vector to a given length
  */
 Vector.prototype.resize = function(l) {
-    var factor = l / this.len();
-    return new Vector(this.x * factor, this.y * factor);
+    var a = this.angle();
+    var x = Math.cos(a) * l;
+    var y = Math.sin(a) * l;
+    return new Vector(x, y);
 }
 
 /**

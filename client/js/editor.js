@@ -2,7 +2,7 @@
  * This is for load testing
  */
 var N = 1; // 20
-var fps = 0; // 0
+var fps = 10; // 0
 var times = undefined;
 
 /**
@@ -85,6 +85,7 @@ var models = {
 
 var editor = initAce('editor');
 bindEditorModel(editor, models.activeScript, models.scriptChanged.bind(models));
+models.activeScript.title.subscribe(models.scriptChanged.bind(models));
 initVimPreference(editor, models.useVim);
 editor.focus();
 

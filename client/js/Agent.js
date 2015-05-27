@@ -32,7 +32,6 @@ function Agent(ident) {
     this.initialized = false;
     this.ident = ident;
     this.pos = new Vector(0, 0);
-    this.last_pos = this.pos;
     this.v = new Vector(0, 0);
     this.data = {}; // For other routines to annotate agents
 }
@@ -58,7 +57,6 @@ Agent.prototype.tick = function(world) {
 }
 
 Agent.prototype.move = function(vfps) {
-    this.last_pos = this.pos;
     this.pos = this.pos.plus(this.v.times(1 / vfps));
 }
 

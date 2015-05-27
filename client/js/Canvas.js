@@ -40,7 +40,7 @@ var World = function(w, h, canvasEl, errorHandler) {
     physics.FADE_TIME = physics.VFPS * 10;
     physics.MAX_PARTICLES_PER_AGENT = physics.FADE_TIME;  // One particle per frame ought to be allowed
     physics.MAX_DRAW_DISTANCE = 100;
-    physics.MAX_SIZE = 100;
+    physics.MAX_SIZE = 150;
     physics.WORLD = new Vector(w, h);
 
     self.virtual_fps = physics.VFPS;
