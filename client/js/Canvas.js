@@ -213,6 +213,9 @@ var Perspective = function(t, agent, world, closest_agent, closest_particle, phy
     // statements, so users don't need to give them names.
     var every_ctr = 0;
 
+    if (!closest_agent) closest_agent = agent;
+    if (!closest_particle) closest_particle = agent;
+
     /**
      * The part of this world that an agent is allowed to see
      */
@@ -253,8 +256,13 @@ var Perspective = function(t, agent, world, closest_agent, closest_particle, phy
             var speed = agent.v.len();
             agent.v = agent.v.resize(abs_clip(speed * f, physics.MAX_SPEED));
         },
+        setV: function(v) {
+            v = Vector.make(v);
+            if (!(v instanceof Vector)) return;
+            agent.v = v.resize(abs_clip(v.len(), physics.MAX_SPEED));
+        },
         adjustSpeed: function(tr, clip_at_zero) {
-            var ns = speed + tr;
+            var ns = agent.v.len() + tr;
             if (clip_at_zero && ns < 0) ns = 0;
 
             agent.v = agent.v.resize(abs_clip(ns, physics.MAX_SPEED));

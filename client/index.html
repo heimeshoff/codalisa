@@ -13,11 +13,13 @@
     <body>
         <div class="h-div">
             <div class="script-list h-left h-15p with-content with-separator" data-bind="with: scripts">
-                <h4>Scripts</h4>
+                <div class="clearfix">
+                  <h4 class="left">Scripts</h4>
+                  <div class="right" style="margin-top: 20px;"><a href="#" style="width: 35px;" class="round success label" data-bind="click: newScript">New</a></div>
+                </div>
                 <ul class="list" data-bind="foreach: scripts">
                     <li class="list-item" data-bind="text: title, css: { selected: $parent.selected() == file }, click: $parent.select">x</li>
                 </ul>
-                <center><a href="#" class="radius success button" data-bind="click: newScript">New...</a></center>
             </div>
 
             <div class="editor-pane h-left h-40p with-content with-separator">
@@ -87,6 +89,10 @@
                         </table>
                     </div>
                     <div style="text-align: right; height: 45px;" data-bind="visible: activeScript.isDraft">
+                        <div style="margin-top: 10px;" class="left">
+                          <a href="reference.pdf" target="_blank">API Reference (pdf)</a>
+                        </div>
+
                         <img src="res/spinner.gif" style="margin-top: 10px; margin-right: 30px;" data-bind="visible: saving">
                         <a href="#" style="margin-right: 20px;" data-bind="click: reinit, visible: !saving()">Re-setup</a>
                         <a href="#" class="radius button" data-bind="click: publish, visible: !saving()">Publish</a>

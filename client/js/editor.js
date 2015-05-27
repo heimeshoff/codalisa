@@ -2,7 +2,7 @@
  * This is for load testing
  */
 var N = 1; // 20
-var fps = 10; // 0
+var fps = 0; // 0
 var times = undefined;
 
 /**
@@ -70,7 +70,7 @@ var models = {
                     self.saving(false);
                     return obj;
                 }).fail(function(err) {
-                    alert(err);
+                    alert(String(err));
                 });
         }, 1000);
     },
@@ -92,6 +92,7 @@ editor.focus();
  * Handle change of selected script (load it)
  */
 models.scripts.selected.subscribe(function(name) {
+    if (!name) return;
     if (window.history.replaceState) {
         window.history.replaceState(null, null, '#' + name);
     }
@@ -103,7 +104,10 @@ models.scripts.selected.subscribe(function(name) {
     else 
         models.scripts
             .get(name)
-            .then(models.activeScript.set);
+            .then(function(obj) {
+               models.activeScript.set(obj);
+               models.reinit();
+            });
 });
 
 models.scripts.selected(window.location.hash.substr(1));

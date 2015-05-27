@@ -65,8 +65,6 @@ app.post('/s/:file', function(req, res) {
         return script_db.save(req.params.file, req.body).then(function() {
             res.send('OK');
             io.emit('scripts-changed', { file: req.params.file });
-
-            console.log('hoi');
             
             if (original.script != req.body.script) {
                 console.log('Script published!');

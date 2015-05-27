@@ -84,6 +84,10 @@ function randNr(min, max) {
     return min + Math.random() * (max - min);
 }
 
+function maybe(p) {
+  return Math.random() < p;
+}
+
 function randInt(min, max) {
     if (typeof(max) == 'undefined') {
         max = min;

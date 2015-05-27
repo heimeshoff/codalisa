@@ -64,6 +64,8 @@ GridIndex.prototype.add = function(x, y, obj) {
  *   
  */
 GridIndex.prototype.find = function(x, y, exceptIdent) {
+    if (isNaN(x) || isNaN(y)) return null;
+
     var i0 = Math.floor(x / this.size);
     var j0 = Math.floor(y / this.size);
 

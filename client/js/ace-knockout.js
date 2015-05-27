@@ -14,6 +14,7 @@ function initAce(id) {
     editor.setTheme(liveTheme);
     editor.getSession().setMode("ace/mode/javascript");
     editor.getSession().setUseSoftTabs(true);
+    editor.getSession().setTabSize(2);
 
     return editor;
 }
