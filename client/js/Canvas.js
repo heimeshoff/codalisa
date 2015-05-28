@@ -1,3 +1,7 @@
+if (typeof window.assert == 'undefined') {
+    window.assert = function() { }
+}
+
 /**
  * Fisher-Yates shuffle
  */
@@ -42,6 +46,8 @@ var World = function(w, h, canvasEl, errorHandler) {
     physics.MAX_DRAW_DISTANCE = 100;
     physics.MAX_SIZE = 150;
     physics.WORLD = new Vector(w, h);
+    physics.SEARCH_GRID = 100;
+    if (w < 400) physics.SEARCH_GRID = 30;
 
     self.virtual_fps = physics.VFPS;
 
@@ -83,8 +89,8 @@ var World = function(w, h, canvasEl, errorHandler) {
 
     var makeIndexes = function() {
         return {
-            agents: makeIndex(w, h, 100, agents, true),
-            particles: makeIndex(w, h, 100, particles)
+            agents: makeIndex(w, h, physics.SEARCH_GRID, agents, true),
+            particles: makeIndex(w, h, physics.SEARCH_GRID, particles)
         };
     }
 
@@ -326,7 +332,7 @@ var Particle = function(pos, shape, color, size, rotation, alpha, borderColor) {
     // We only need to push and pop a transformation matrix if we do rotation
     // on a shape where that's visible, or uneven scaling on a circle. This
     // saves a lot of CPU. 
-    this.pushState = ((this.shape == 'rect' || this.shape == 'triangle') && this.rotation != 0)
+    this.pushState = ((this.shape != 'rect' && this.rotation != 0)
                    || (this.shape == 'circle' && this.size.x != this.size.y);
 }
 
@@ -418,74 +424,88 @@ MouseAgent.prototype = new Agent();
  *
  * We're targeting a virtual FPS 
  */
-var Simulation = function(world, fps, reportFps, times) {
-    var signals = {};
-    var t0;
-    var tick0;
+var Simulation = (function() {
+    // Shared scope for simulation objects
+    var activeSimulation = null;
 
-    /**
-     * Frame counter
-     */
-    var frames = 0;
-    setInterval(function() {
-        if (reportFps) reportFps(frames);
-        frames = 0;
-    }.bind(this), 1000);
+    return function(world, fps, reportFps, times) {
+        var signals = {
+            sound: 100,
+            dist: 80,
+            btn: 0,
+            light: 5
+        };
+        var t0;
+        var tick0;
 
-    var self = this;
+        /**
+        * Frame counter
+        */
+        var frames = 0;
+        setInterval(function() {
+            if (reportFps) reportFps(frames);
+            frames = 0;
+        }.bind(this), 1000);
 
-    var driveTick = function(t) {
-        // We may have multiple world ticks per invocation
-        var targetTick = tick0 + (Date.now() - t0) * (world.virtual_fps / 1000);
-        var ticked = false;
-        while (world.tickNr() < targetTick) {
-            world.tick(signals);
-            ticked = true;
+        var self = this;
+
+        var driveTick = function(t) {
+            // We may have multiple world ticks per invocation
+            var targetTick = tick0 + (Date.now() - t0) * (world.virtual_fps / 1000);
+            var ticked = false;
+            while (world.tickNr() < targetTick) {
+                world.tick(signals);
+                ticked = true;
+            }
+            // But we draw at most once
+            if (ticked) {
+                world.draw();
+                frames++;
+            }
+
+            if (times !== undefined) {
+                if (times-- == 0) self.stop();
+            }
+
+            if (fps == 0 && running)
+                window.requestAnimationFrame(driveTick);
         }
-        // But we draw at most once
-        if (ticked) {
-            world.draw();
-            frames++;
+
+        var running;
+        this.start = function() {
+            if (running) return;
+            if (activeSimulation) activeSimulation.stop();
+
+            running = true;
+            activeSimulation = self;
+
+            t0 = Date.now();
+            tick0 = world.tickNr();
+
+            if (fps == 0)
+                window.requestAnimationFrame(driveTick);
+            else
+                timer = window.setInterval(driveTick, 1000 / fps);
+        };
+
+        this.stop = function() {
+            if (!running) return;
+            running = false;
+            if (activeSimulation == self) activeSimulation = null;
+
+            if (fps != 0) 
+                window.clearInterval(timer);
+        };
+
+        this.toggle = function() {
+            if (running)
+                this.stop();
+            else
+                this.start();
         }
 
-        if (times !== undefined) {
-            if (times-- == 0) self.stop();
-        }
-
-        if (fps == 0 && running)
-            window.requestAnimationFrame(driveTick);
-    }
-
-    var running;
-    this.start = function() {
-        if (running) return;
-        running = true;
-
-        t0 = Date.now();
-        tick0 = world.tickNr();
-
-        if (fps == 0)
-            window.requestAnimationFrame(driveTick);
-        else
-            timer = window.setInterval(driveTick, 1000 / fps);
+        this.setSignals = function(sigs) {
+            if (sigs) signals = sigs;
+        };
     };
-
-    this.stop = function() {
-        if (!running) return;
-        running = false;
-
-        if (fps != 0) 
-            window.clearInterval(timer);
-    };
-
-    this.toggle = function() {
-        if (running)
-            this.stop();
-        else
-            this.start();
-    }
-
-    this.setSignals = function(sigs) {
-        signals = sigs || {};
-    };
-};
+}());

@@ -49,7 +49,7 @@ Agent.prototype.setControl = function(obj) {
 
 Agent.prototype.tick = function(world) {
     if (!this.initialized) {
-        this.control.setup();
+        this.control.setup(world);
         this.initialized = true;
     }
 

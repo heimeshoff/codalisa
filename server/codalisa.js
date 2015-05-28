@@ -128,6 +128,7 @@ app.post('/b/:file', function(req, res) {
 
 var oneDay = 24 * 60 * 60 * 1000;
 app.use(express.static('../client', { maxAge: oneDay }));
+app.use('/presentation', express.static('../presentation', { maxAge: oneDay }));
 
 http.listen(3000);
 console.log("Please open http://localhost:%d/", 3000);

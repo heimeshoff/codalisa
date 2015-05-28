@@ -20,12 +20,16 @@
 		<!-- For syntax highlighting -->
 		<link rel="stylesheet" href="lib/css/zenburn.css">
 
-        <script src="../../client/js/Canvas.js"></script>
-        <script src="../../client/js/agent-fns.js"></script>
-        <script src="../../client/bower_components/jquery/dist/jquery.min.js"></script>
-        <script src="../../client/bower_components/lodash/dist/lodash.min.js"></script>
+        <script src="/js/Vector.js"></script>
+        <script src="/js/Agent.js"></script>
+        <script src="/js/Canvas.js"></script>
+        <script src="/js/Color.js"></script>
+        <script src="/js/palette.js"></script>
+        <script src="/js/GridIndex.js"></script>
+        <script src="/bower_components/jquery/dist/jquery.min.js"></script>
+        <script src="/bower_components/lodash/dist/lodash.min.js"></script>
 
-        <script src="http://localhost:3000/socket.io/socket.io.js"></script>
+        <script src="/socket.io/socket.io.js"></script>
 
 		<!-- If the query includes 'print-pdf', include the PDF print sheet -->
 		<script>
@@ -45,6 +49,7 @@
 
         <script>
         $(function() {
+          /*
             SimRunner.setFps(20);
             var socket = io('http://localhost:3000');
             SimRunner.setSignals({ 
@@ -56,7 +61,37 @@
             socket.on('signals', function(signals) {
                 SimRunner.setSignals(signals);
             });
+            */
         });
+
+        function prepare(id) {
+            var canvasEl = document.getElementById(id);
+            var world = new World(200, 200, canvasEl);
+            var agent = new Agent('user');
+            agent.setControl(agentControlFromScript($('#' + id + '-script').text(), id));
+            world.addAgent(agent);
+            var sim = new Simulation(world);
+            $('#' + id).click(sim.start);
+            return world;
+        }
+
+        $(function() {
+          $('canvas').each(function(i, e) {
+            var id = $(e).attr('id');
+            if (id && $('#' + id + '-script').size()) {
+                $('#' + id).css('background', 'rgb(246, 247, 189)');
+                var w = prepare(id);
+
+                // Look for a second script
+                if ($('#' + id + '-script2').size()) {
+                    var a = new Agent('user2');
+                    a.setControl(agentControlFromScript($('#' + id + '-script2').text(), 'user2'));
+                    w.addAgent(a);
+                }
+            }
+          });
+        });
+
         </script>
 	</head>
 
@@ -82,7 +117,7 @@
                         <h2>The plan</h2>
                         <img src="plan.jpg">
                         <ul>
-                            <li>Step 1: <strong>Script some graphics</strong></li>
+                            <li>Step 1: <strong>Make programs that paint a picture</strong></li>
                             <li>Step 2: <strong>???</strong></li>
                             <li>Step 3: <strong>Profit!</strong></li>
                         </ul>
@@ -100,7 +135,23 @@
 				<section>
                     <div class="sectionback"></div>
                     <div class="overlay">
-                        <h2>Draw distance</h2>
+                        <h2>Remember this?</h2>
+                        <img src="Spirograph3.jpg" height="450">
+                    </div>
+				</section>
+                
+				<section>
+                    <div class="sectionback"></div>
+                    <div class="overlay">
+                        <h2>Basics</h2>
+                        <img src="principles.png" height="450">
+                    </div>
+				</section>
+
+				<section>
+                    <div class="sectionback"></div>
+                    <div class="overlay">
+                        <h2>Center of the universe</h2>
                         <img src="distance.png" height="450">
                     </div>
 				</section>
@@ -108,7 +159,7 @@
 				<section>
                     <div class="sectionback"></div>
                     <div class="overlay">
-                        <h2>What to draw</h2>
+                        <h2>Drawing</h2>
                         <img src="objects.png" height="450">
                     </div>
 				</section>
@@ -124,11 +175,35 @@
 				<section>
                     <div class="sectionback"></div>
                     <div class="overlay">
+                        <h2>Moving</h2>
+                        <img src="changing-speed.png" height="450">
+                    </div>
+				</section>
+
+				<section>
+                    <div class="sectionback"></div>
+                    <div class="overlay">
                         <h2>More high school math</h2>
                         <img src="vector2.png" height="450">
                     </div>
 				</section>
 
+				<section>
+                    <div class="sectionback"></div>
+                    <div class="overlay">
+                        <h2>Physics!</h2>
+                        <img src="physics.png" height="450">
+                    </div>
+				</section>
+
+				<section>
+                    <div class="sectionback"></div>
+                    <div class="overlay">
+                        <h2>Stuff Around You</h2>
+                        <img src="reacting.png" height="450">
+                        <div>Also: time!</div>
+                    </div>
+				</section>
 
                 <section>
                     <div class="sectionback"></div>
@@ -136,15 +211,16 @@
                         <h2>The API</h2>
                         <pre><code data-trim>
 function setup() {
-    // ...
+    // Called once, to initalize some variables.
+    this.var = 3;
 }
 
 function tick(p) {
-    // ...
+    // Called 60 times per second to do whatever you want.
+    // p is a Perspective object.
+    // You use this to look at the world and control your agent.
 }
                         </code></pre>
-
-                        Coordinate space: <code>(0, 0)..(cell.w, cell.h)</code>
                     </div>
                 </section>
 
@@ -164,6 +240,13 @@ function tick(p) {
                                 <td>128, 196, 255</td><td><div style="background: #80c4ff; width: 50px; height: 50px; border: solid 1px black;"></td>
                             </tr>
                         </table>
+                    </div>
+                </section>
+
+                <section>
+                    <div class="sectionback"></div>
+                    <div class="overlay">
+                        <h2>Mixing colors</h2>
                         <pre><code data-trim>color1.mix(color2, 0.5)</code></pre>
                         <table style="width: 80%; text-align: center; margin: 0 auto;">
                             <tr id="color-row">
@@ -180,10 +263,11 @@ function tick(p) {
                                 <td><div style="background: #ff0000; width: 50px; height: 50px; border: solid 1px black;"></td>
                             </tr>
                         </table>
+                        <div style="margin-top:20px;">Colors can be partly see-through (alpha)</div>
                         <script>
                             $(function() {
-                                var c1 = new Color(75, 61, 191); // purple
-                                var c2 = new Color(53, 179, 21); // green
+                                var c1 = new Color(255, 0, 0); // purple
+                                var c2 = new Color(255, 255, 255); // green
 
                                 var divs = $('#color-row div');
                                 var steps = divs.length;
@@ -200,251 +284,186 @@ function tick(p) {
                 <section>
                     <div class="sectionback"></div>
                     <div class="overlay">
-                        <h2>Painting pixels</h2>
-                        <table style="width: 90%;"><tr><td>
-                        <pre><code data-trim>
-function setup() { }
-
-function draw(t, cell) {
-  for (var y = 0; y < cell.h; y++) {
-    for (var x = 0; x < cell.x; x++) {
-      var r = Math.cos(x / 100) * 255;
-      var g = Math.sin(y / 100) * 255;
-      var b = 0;
-
-      cell.set(x, y, new Color(r, g, b));
-    }
-  }
-}
-                        </code></pre>
-                        </td><td style="width: 250px;">
-                            <canvas id="noise">
-                            </canvas>
-                        </td></tr></table>
-                    </div>
-                    <script>
-$(function() {
-    var canvas = new Canvas(100, 100, document.getElementById('noise'));
-    var sim = new Simulation(canvas, 1, 1, {});
-    sim.setAgent(0, 0, {
-        setup: function() { }, 
-        draw: function(t, cell) {
-            for (var y = 0; y < cell.h; y++) {
-                for (var x = 0; x < cell.w; x++) {
-                    var c = new Color(Math.cos(x / 50) * 255,
-                                      Math.sin(y / 50) * 255,
-                                      0);
-                    cell.set(x, y, c);
-                }
-            }
-        }
-    });
-    $('#noise').click(sim.start);
-});
-                    </script>
-                </section>
-
-                <section>
-                    <div class="sectionback"></div>
-                    <div class="overlay">
-                        <h2>Varying based on time</h2>
-                        <table><tr><td>
-                        <pre><code data-trim>
-var t0;
-function setup(t) { t0 = t; }
-
-function draw(t, cell) {
-  for (var y = 0; y < cell.h; y++) {
-    for (var x = 0; x < cell.w; x++) {
-      var r = Math.cos(x / 50 * (t - t0)) * 255;
-      var g = Math.sin(y / 50 * (t - t0)) * 255;
-      var b = 0;
-
-      cell.set(x, y, new Color(r, g, b));
-    }
-  }
-}
-                        </code></pre>
-                        </td><td style="width: 250px;">
-                            <canvas id="moving-noise">
-                            </canvas>
-                        </td></tr></table>
-                    </div>
-                    <script>
-$(function() {
-    var canvas = new Canvas(100, 100, document.getElementById('moving-noise'));
-    var sim = new Simulation(canvas, 1, 1, {});
-
-    var t0;
-    sim.setAgent(0, 0, {
-        setup: function(t) { t0 = t; }, 
-        draw: function(t, cell) {
-            for (var y = 0; y < cell.h; y++) {
-                for (var x = 0; x < cell.w; x++) {
-                    var c = new Color(Math.cos(x / 50 * (t - t0)) * 255,
-                                      Math.sin(y / 50 * (t - t0)) * 255,
-                                      0);
-                    cell.set(x, y, c);
-                }
-            }
-        }
-    });
-    $('#moving-noise').click(sim.start);
-});
-                    </script>
-                </section>
-
-                <section>
-                    <div class="sectionback"></div>
-                    <div class="overlay">
-                        <h2>Mixing in previous values</h2>
-                        <table><tr><td>
-                        <pre><code data-trim>
-function alive(x, y, cell) {
-  return cell.get(x, y).avg() < 128;
-}
-
-// ...
-
-function draw(t, cell) {
-  for (var y = 0; y < cell.h; y++) {
-    for (var x = 0; x < cell.w; x++) {
-      if (alive(x, y, cell) && (neighs < 2 || neighs > 3))
-        cell.set(x, y, dead_color);
-      else if (!alive(x, y, cell) && neighs == 3)
-        cell.set(x, y, alive_color);
-    }
-  }
-}
-
-                        </code></pre>
-                        </td><td style="width: 250px;">
-                            <canvas id="mixing">
-                            </canvas>
-                        </td></tr></table>
-                    </div>
-                    <script>
-
-var gameOfLife = (function() {
-    var ngs = [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]];
-
-    var sum = function(coll) { return _.reduce(coll, function(sum, num) { return sum + num; }); }
-
-    var alive = function(x, y, cell) { return cell.get(x, y).avg() < 128; }
-    var neighbours = function(x, y, cell) {
-        return sum(_.map(ngs, function(ofs) { return alive(x+ofs[0], y+ofs[1], cell); }));
-    };
-
-    var dead_color = new Color(255, 255, 255);
-    var alive_color = new Color(0, 0, 0);
-
-    return {
-        setup: function(t) {}, 
-        draw: function(t, cell) {
-            var total_alive = 0;
-            for (var y = 0; y < cell.h; y++) {
-                for (var x = 0; x < cell.w; x++) {
-                    var n = neighbours(x, y, cell);
-                    var a = alive(x, y, cell);
-                    if (a) total_alive += 1;
-                    
-                    if (a && (n < 2 || n > 3))
-                        cell.set(x, y, dead_color);
-                    else if (!a && n == 3)
-                        cell.set(x, y, alive_color);
-                }
-            }
-            // Keep some population alive
-            if (total_alive < 500)
-                for (var i = 0; i < 500; i++)
-                    cell.set(Math.random() * cell.w, Math.random() * cell.h, alive_color);
-        }
-    }
-}());
-$(function() {
-    var canvas = new Canvas(100, 100, document.getElementById('mixing'));
-    var sim = new Simulation(canvas, 1, 1, {});
-
-    sim.setAgent(0, 0, gameOfLife);
-    $('#mixing').click(sim.start);
-});
-                    </script>
-                </section>
-
-                <section>
-                    <div class="sectionback"></div>
-                    <div class="overlay">
-                        <h2>Cells</h2>
-
-                        <p>Layout of cells</p>
-                        <table style="width: auto;" class="cell-examples">
-                            <tr>
-                                <td></td><td></td><td></td>
-                            </tr>
-                            <tr>
-                                <td></td><td style="background: red;"></td><td></td>
-                            </tr>
-                            <tr>
-                                <td></td><td></td><td></td>
+                        <h2>Palette Colors</h2>
+                        <pre><code data-trim>palette[0], palette[1], ..., palette[8]</code></pre>
+                        <table style="width: 80%; text-align: center; margin: 0 auto;">
+                            <tr id="palette-row">
+                                <td><div style="background: #ff0000; width: 50px; height: 50px; border: solid 1px black;"></td>
+                                <td><div style="background: #ff0000; width: 50px; height: 50px; border: solid 1px black;"></td>
+                                <td><div style="background: #ff0000; width: 50px; height: 50px; border: solid 1px black;"></td>
+                                <td><div style="background: #ff0000; width: 50px; height: 50px; border: solid 1px black;"></td>
+                                <td><div style="background: #ff0000; width: 50px; height: 50px; border: solid 1px black;"></td>
+                                <td><div style="background: #ff0000; width: 50px; height: 50px; border: solid 1px black;"></td>
+                                <td><div style="background: #ff0000; width: 50px; height: 50px; border: solid 1px black;"></td>
+                                <td><div style="background: #ff0000; width: 50px; height: 50px; border: solid 1px black;"></td>
+                                <td><div style="background: #ff0000; width: 50px; height: 50px; border: solid 1px black;"></td>
                             </tr>
                         </table>
-                        Go out of bounds to read cells next to you.<br>
-                        <em>Can't write!</em>
+                        <script>
+                            $(function() {
+                                var divs = $('#palette-row div');
+                                for (var i = 0; i < palette.length; i++) {
+                                    $(divs.get(i)).css({ background: palette[i].hex() });
+                                }
+                            });
+                        </script>
                     </div>
                 </section>
 
+                <!-- ===================================================================== -->
                 <section>
                     <div class="sectionback"></div>
                     <div class="overlay">
-                        <h2>Reading pixels from other cells</h2>
-                        <table><tr><td>
-                        <pre><code data-trim>
-// mirror
-function setup() { }
-function draw(t, cell) {
-  var white = new Color(255, 255, 255);
-  for (var y = 0; y < cell.h; y++) {
-    for (var x = 0; x < cell.w; x++) {
-      var above = cell.get(x, -y-1)
-      var shine = Color.grey(150 + Math.sqrt(y) * 25);
-      var mixed = above.mix(white, y * 1.5 / cell.h);
+                        <h2>Moving and drawing</h2>
+                        <table style="width: 90%;"><tr><td>
+                        <pre><code id='noise-script'>
+function setup(p) {
+  p.setV(new Vector(200, 90));
+}
 
-      cell.set(x, y, shine.sub(mixed.inv()));
-    }
+function tick(p) {
+  p.drop('rect', new Vector(0, 0), 5);
+}
+                        </code></pre>
+                        </td><td style="width: 250px;">
+                            <canvas id="noise"></canvas>
+                        </td></tr></table>
+                    </div>
+                </section>
+
+                <!-- ===================================================================== -->
+                <section>
+                    <div class="sectionback"></div>
+                    <div class="overlay">
+                        <h2>Decisions on time</h2>
+                        <table style="width: 90%;"><tr><td>
+                        <pre><code id='periodic-script'>
+function setup(p) {
+  p.setV(new Vector(200, 90));
+}
+
+function tick(p) {
+  if (p.hz(10)) {
+    var size = 10;
+    if (p.periodic(2)) size = 20;
+
+    p.drop('rect', new Vector(0, 0), size);
   }
 }
                         </code></pre>
                         </td><td style="width: 250px;">
-                            <canvas id="mirror" style="height: 500px;">
-                            </canvas>
+                            <canvas id="periodic"></canvas>
                         </td></tr></table>
                     </div>
-                    <script>
-var mirror = {
-    setup: function() { },
-    draw: function(t, cell) {
-        var white = new Color(255, 255, 255);
-        for (var y = 0; y < cell.h; y++) {
-            for (var x = 0; x < cell.w; x++) {
-                var above = cell.get(x, -y-1)
-                var shine = Color.grey(150 + Math.sqrt(y) * 25);
-                var mixed = above.mix(white, y * 1.5 / cell.h);
-                cell.set(x, y, shine.sub(mixed.inv()));
-            }
-        }
-    }
-}
-$(function() {
-    var canvas = new Canvas(100, 200, document.getElementById('mirror'));
-    var sim = new Simulation(canvas, 1, 2, {});
-
-    sim.setAgent(0, 0, gameOfLife);
-    sim.setAgent(0, 1, mirror);
-    $('#mirror').click(sim.start);
-});
-                    </script>
                 </section>
 
+                <!-- ===================================================================== -->
+                <section>
+                    <div class="sectionback"></div>
+                    <div class="overlay">
+                        <h2>Vary color and opacity on time</h2>
+                        <table style="width: 90%;"><tr><td>
+                        <pre><code id='colors-script'>
+function setup(p) {
+  p.setV(new Vector(200, 90));
+}
+
+function tick(p) {
+  var alpha = (p.t % 80) / 80;
+  var col = Math.floor(p.t / 60) % palette.length;
+  var size = 5 + (p.t / 20) % 10;
+
+  if (p.hz(10)) {
+    p.drop('rect', new Vector(0, 0), size,
+        palette[col], alpha);
+  }
+}
+                        </code></pre>
+                        </td><td style="width: 250px;">
+                            <canvas id="colors"></canvas>
+                        </td></tr></table>
+                    </div>
+                </section>
+
+                <!-- ===================================================================== -->
+                <section>
+                    <div class="sectionback"></div>
+                    <div class="overlay">
+                        <h2>Change direction</h2>
+                        <table style="width: 90%;"><tr><td>
+                        <pre><code id='direction-script'>
+function setup(p) {
+  p.setV(new Vector(200, 90));
+  this.black = new Color(0, 0, 0);
+}
+
+function tick(p) {
+  p.drop('line', [0, 0], p.last_pos, this.black, 0.3);
+  p.remember_pos();
+
+  if (p.hz(20)) {
+    if (maybe(0.08)) p.turn(-10);
+    if (maybe(0.01)) p.turn(90);
+  }
+
+  if (p.hz(6)) p.drop('circle', [0, 0], 10, palette[7], 0.1);
+}
+                        </code></pre>
+                        </td><td style="width: 250px;">
+                            <canvas id="direction"></canvas>
+                        </td></tr></table>
+                    </div>
+                </section>
+
+                <!-- ===================================================================== -->
+                <section>
+                    <div class="sectionback"></div>
+                    <div class="overlay">
+                        <h2>Follow another agent</h2>
+                        <table style="width: 90%;"><tr><td>
+                        <pre><code id="follow-script">
+function setup(p) {
+  p.setV(new Vector(35, 20));
+}
+
+function tick(p) {
+  if (p.hz(10)) {
+    var alpha = p.closest_agent.len() / 100;
+    alpha = clip(alpha, 0.2, 1);
+    
+    p.drop('rect', [0, 0], 10 * alpha, palette[3], alpha);
+
+    p.turnTo(p.closest_agent, 0.8);
+  }
+}
+                        </code></pre>
+                        </td><td style="width: 250px;">
+                            <canvas id="follow"></canvas>
+                        </td></tr></table>
+                    </div>
+<script id="follow-script2">
+// Run away
+function setup(p) {
+    p.setV(new Vector(85, 31));
+}
+
+function tick(p) {
+    if (p.hz(30)) {
+        p.drop('circle', [0, 0], 2, new Color(255, 0, 0));
+    }
+
+    if (maybe(0.05)) {
+        p.turnTo(p.closest_agent, 0.9);
+        p.scaleSpeed(-1);
+    }
+    if (maybe(0.01)) {
+        p.turn(randNr(0, 180) - 90);
+    }
+}
+</script>
+                </section>
+
+                <!-- ===================================================================== -->
                 <section>
                     <div class="sectionback"></div>
                     <div class="overlay">
@@ -461,70 +480,42 @@ $(function() {
                     </div>
                 </section>
 
+                <!-- ===================================================================== -->
                 <section>
                     <div class="sectionback"></div>
                     <div class="overlay">
-                        <h2>The real world!</h2>
-                        <table><tr><td>
-                        <pre><code data-trim>
-function setup() { }
+                        <h2>Respond to the real world</h2>
+                        <table style="width: 90%;"><tr><td>
+                        <pre><code id='signals-script'>
+function setup(p) {
+  p.setV(new Vector(200, 90));
+}
 
-function draw(t, cell, signals) {
-  for (var y = 0; y < cell.h; y++) {
-    for (var x = 0; x < cell.w; x++) {
+function tick(p) {
+  if (p.hz(10)) {
+    var size_x = p.signals.sound;
+    var size_y = p.signals.dist;
+    var alpha = p.signals.sound / 300;
+    p.drop('circle', [0, 0], [size_x, size_y],
+        palette[6], alpha);
+  }
 
-      var r = Math.cos(x / 50 * signals.dist) * 255;
-      var g = Math.sin(y / 50 * signals.sound) * 255,
-      var c = new Color(r, g, 0);
-
-      if (signals.btn > 50) c = c.inv();
-      cell.set(x, y, c);
-    }
+  if (p.hz(1) && p.signals.btn) {
+    p.turn(randNr(0, 180) - 90);
   }
 }
                         </code></pre>
                         </td><td style="width: 250px;">
-                            <canvas id="real">
-                            </canvas>
+                            <canvas id="signals"></canvas>
                         </td></tr></table>
                     </div>
-                    <script>
-$(function() {
-    var sigger = {
-        setup: function() { },
-        draw: function(t, cell, signals) {
-            for (var y = 0; y < cell.h; y++) {
-                for (var x = 0; x < cell.w; x++) {
-                    var c = new Color(Math.cos(x / 50 * signals.dist) * 255,
-                                      Math.sin(y / 50 * signals.sound) * 255,
-                                      0);
-                    if (signals.btn > 50) c = c.inv();
-                    cell.set(x, y, c);
-                }
-            }
-        }
-    }
-    
-
-    var canvas = new Canvas(100, 100, document.getElementById('real'));
-    var sim = new Simulation(canvas, 1, 1, {});
-
-    sim.setAgent(0, 0, sigger);
-    $('#real').click(sim.start);
-});
-                    </script>
                 </section>
 
                 <section>
                     <div class="sectionback"></div>
                     <div class="overlay">
-                        <h2>Honor code</h2>
-                        <img src="boyscouts.jpg">
-                        <ul>
-                            <li>Don't write infinite loops.</li>
-                            <li>Don't destroy people's work.</li>
-                            <li>Etc...</li>
-                        </ul>
+                        <h2>User Interface</h2>
+                        <img src="ui.png" height="550">
                     </div>
                 </section>
 
@@ -535,9 +526,23 @@ $(function() {
                         <img src="perf.png" height="300">
                         <ul>
                             <li>No higher-order functions.</li>
-                            <li>Reuse color objects.</li>
                             <li>Use Chrome perf tools when in doubt.</li>
                         </ul>
+                    </div>
+                </section>
+
+                <section>
+                    <div class="sectionback"></div>
+                    <div class="overlay">
+                        <h2>Honor code</h2>
+                        <img src="boyscouts.jpg" height="350">
+                        <div>
+                            <ul>
+                                <li>Don't write infinite loops.</li>
+                                <li>Don't destroy people's work.</li>
+                                <li>Etc...</li>
+                            </ul>
+                        </div>
                     </div>
                 </section>
 

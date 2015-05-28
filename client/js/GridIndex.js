@@ -110,7 +110,11 @@ GridIndex.prototype.findClosestIn = function(x, y, i0, j0, cells, closest_so_far
         var cell_i = (i0 + cells[i][0] + this.cw) % this.cw;
         var cell_j = (j0 + cells[i][1] + this.ch) % this.ch;
 
-        var cell = this.grid[cell_i][cell_j];
+        if (cell_i < 0 || cell_i >= this.grid.length) continue;
+        var column = this.grid[cell_i];
+        if (cell_j < 0 || cell_j >= column.length) continue;
+
+        var cell = column[cell_j];
         for (var k = 0; k < cell.length; k++) {
             var obj = cell[k];
 
