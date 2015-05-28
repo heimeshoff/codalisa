@@ -332,7 +332,7 @@ var Particle = function(pos, shape, color, size, rotation, alpha, borderColor) {
     // We only need to push and pop a transformation matrix if we do rotation
     // on a shape where that's visible, or uneven scaling on a circle. This
     // saves a lot of CPU. 
-    this.pushState = ((this.shape != 'rect' && this.rotation != 0)
+    this.pushState = ((this.shape == 'rect' || this.shape == 'triangle') && this.rotation != 0)
                    || (this.shape == 'circle' && this.size.x != this.size.y);
 }
 
@@ -364,6 +364,10 @@ Particle.prototype.draw = function(ctx, alpha_factor) {
 
     if (shape == 'line') {
         ctx.beginPath();
+
+        if (this.rotation != 0)
+            size = size.rotate(rad(this.rotation));
+
         ctx.moveTo(pos.x, pos.y);
         ctx.lineTo(pos.x + size.x, pos.y + size.y);
         ctx.stroke();
