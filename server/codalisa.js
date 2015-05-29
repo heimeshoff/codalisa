@@ -21,11 +21,9 @@ var board_db = jsdb.open(jsdb.Board, '../boards');
 
 var MAX_SAME_AGENT = 5;
 
-/*
 signals.start(function(signals) {
     io.emit('signals', signals);
 });
-*/
 
 //----------------------------------------------------------------------
 //  URL HANDLERS

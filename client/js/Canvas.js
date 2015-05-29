@@ -69,14 +69,36 @@ var World = function(w, h, canvasEl, errorHandler) {
         return tickNr;
     }
 
+    function compLenDesc(a, b) {
+        return b._len - a._len;
+    }
+
+    /**
+     * Return distance to all agents
+     */
+    function findAndSortAgents(agent) {
+        var ret = [];
+        for (var i = 0; i < agents.length; i++) {
+            var other = agents[i];
+            if (other.ident == agent.ident) continue; // Skip
+
+            var d = other.pos.torus_minus(agent.pos, physics.WORLD);
+            d.ident = agent.ident;
+            d._len = d.len(); // Precalculate, that's good for sorting
+            ret.push(d);
+        }
+        ret.sort(compLenDesc);
+        return ret;
+    }
+
     /**
      * Make a World object from the perspective of a particular agent
      */
-    var makePerspective = function(agent, signals, indexes) {
+    var makePerspective = function(agent, signals, particleIndex) {
         return new Perspective(
                 tickNr, agent, self,
-                indexes.agents.find(agent.pos.x, agent.pos.y, agent.ident),
-                indexes.particles.find(agent.pos.x, agent.pos.y, agent.ident),
+                findAndSortAgents(agent),
+                particleIndex.find(agent.pos.x, agent.pos.y, agent.ident),
                 physics, signals);
     };
 
@@ -87,13 +109,6 @@ var World = function(w, h, canvasEl, errorHandler) {
 
     var particles_per_agent = { };
 
-    var makeIndexes = function() {
-        return {
-            agents: makeIndex(w, h, physics.SEARCH_GRID, agents, true),
-            particles: makeIndex(w, h, physics.SEARCH_GRID, particles)
-        };
-    }
-
     /**
      * Make all agents do a thing
      *
@@ -102,13 +117,13 @@ var World = function(w, h, canvasEl, errorHandler) {
      * First tick simultaneously, then move simultaneously.
      */
     self.tick = function(signals) {
-        var indexes = makeIndexes();
+        var particleIndex = makeIndex(w, h, physics.SEARCH_GRID, particles);
 
         tickNr++;
         shuffle(agents);
         for (var k in agents) {
                 var agent = agents[k];
-            var perspective = makePerspective(agent, signals, indexes);
+            var perspective = makePerspective(agent, signals, particleIndex);
             try {
                 agent.tick(perspective.agentView);
             } catch (e) {
@@ -212,14 +227,18 @@ var World = function(w, h, canvasEl, errorHandler) {
  * - Change speed vector length (up to a maximum and minimum)
  * - Draw line or particle
  */
-var Perspective = function(t, agent, world, closest_agent, closest_particle, physics, signals) {
+var Perspective = function(t, agent, world, all_agents, closest_particle, physics, signals) {
     if (!('last_pos' in agent.data)) agent.data.last_pos = agent.pos;
 
     // Using this counter, we can identify subsequent hz
     // statements, so users don't need to give them names.
     var every_ctr = 0;
 
-    if (!closest_agent) closest_agent = agent;
+    var closest_agent;
+    if (all_agents.length)
+        closest_agent = all_agents[0];
+    else
+        closest_agent = new Vector(1, 1);
     if (!closest_particle) closest_particle = agent;
 
     /**
@@ -228,13 +247,15 @@ var Perspective = function(t, agent, world, closest_agent, closest_particle, phy
     this.agentView = {
         t: t,
         v: agent.v,
-        last_pos: agent.pos.torus_minus(agent.data.last_pos, physics.WORLD),
+        last_pos: agent.data.last_pos.torus_minus(agent.pos, physics.WORLD),
         remember_pos: function() {
             agent.data.last_pos = agent.pos;
         },
-        closest_agent: closest_agent ? closest_agent.pos.torus_minus(agent.pos, physics.WORLD) : null,
+        closest_agent: closest_agent,
+        other_agents: all_agents,
         closest_particle: closest_particle ? closest_particle.pos.torus_minus(agent.pos, physics.WORLD) : null,
         turn: function(degrees) {
+            if (isNaN(degrees)) throw new Error('Not a number');
             // Note: degrees other way around because y axis inverted
             agent.v = agent.v.rotate(-degrees / 180 * Math.PI);
         },
@@ -287,6 +308,7 @@ var Perspective = function(t, agent, world, closest_agent, closest_particle, phy
 
             if (pos.len() > physics.MAX_DRAW_DISTANCE) pos = pos.resize(physics.MAX_DRAW_DISTANCE);
             if (size.len() > physics.MAX_SIZE) size = size.resize(physics.MAX_SIZE);
+
             world.addParticle(agent, new Particle(agent.pos.plus(pos), shape, color, size, rotation, alpha, borderColor));
         },
 

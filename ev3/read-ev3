@@ -53,7 +53,7 @@ def read():
 
   try:
     if not chan:
-      chan = serial.Serial('/dev/tty.EV3-SerialPort')
+      chan = serial.Serial('/dev/tty.EV3-SerialPort-1')
       chan.baudrate = 115200
 
     chan.write(make_read_command(0, 0) +

@@ -24,9 +24,13 @@ function agentControlFromScript(script, filename) {
  * Agent data
  */
 function Agent(ident) {
+    var self = this;
+
     // State and control functions
     this.control = {
-        setup: function() { },
+        setup: function() {
+            self.initialized = false; // Make sure this doesn't count
+        },
         tick: function() { }
     };
     this.initialized = false;
@@ -49,8 +53,8 @@ Agent.prototype.setControl = function(obj) {
 
 Agent.prototype.tick = function(world) {
     if (!this.initialized) {
-        this.control.setup(world);
         this.initialized = true;
+        this.control.setup(world);
     }
 
     this.control.tick(world);

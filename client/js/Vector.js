@@ -3,6 +3,7 @@
  */
 
 function Vector(x, y) {
+    if (isNaN(x) || isNaN(y)) throw new Error('Vector arg not a number');
     this.x = x;
     this.y = y;
 }
@@ -97,9 +98,10 @@ Vector.prototype.mod = function(v) {
  * Rotate by an amount of radians
  */
 Vector.prototype.rotate = function(a) {
-   var xx = this.x * Math.cos(a) - this.y * Math.sin(a);
-   var yy = this.x * Math.sin(a) + this.y * Math.cos(a);
-   return new Vector(xx, yy);
+    if (isNaN(a)) throw new Error('Rotate argument not a number');
+    var xx = this.x * Math.cos(a) - this.y * Math.sin(a);
+    var yy = this.x * Math.sin(a) + this.y * Math.cos(a);
+    return new Vector(xx, yy);
 }
 
 /**

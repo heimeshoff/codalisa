@@ -58,6 +58,8 @@ var models = {
             for (var i = 0; i < N; i++) {
                 world.agent('user' + (i > 0 ? i : '')).setControl(a);
             }
+            if (force_reinit) models.reinit();
+            force_reinit = false;
         }
         var f = this.activeScript.file();
 
@@ -89,6 +91,8 @@ models.activeScript.title.subscribe(models.scriptChanged.bind(models));
 initVimPreference(editor, models.useVim);
 editor.focus();
 
+var force_reinit = false;
+
 /**
  * Handle change of selected script (load it)
  */
@@ -107,7 +111,7 @@ models.scripts.selected.subscribe(function(name) {
             .get(name)
             .then(function(obj) {
                models.activeScript.set(obj);
-               models.reinit();
+               force_reinit = true;
             });
 });
 
@@ -148,11 +152,9 @@ updateCanvasSize();
 $(window).resize(updateCanvasSize);
 
 
-/*
 // For debuggin'
 document.onkeydown = function(ev) {
   if (ev.keyCode == 66) {
     sim.toggle();
   }
 }
-*/
