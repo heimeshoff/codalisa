@@ -97,7 +97,13 @@ var force_reinit = false;
  * Handle change of selected script (load it)
  */
 models.scripts.selected.subscribe(function(name) {
-    if (!name) return;
+    if (!name || name == models.activeScript.file()) return;
+    if (models.activeScript.isDraftDirty()) {
+        alert('I\'m still saving your work. Please wait a second then try again');
+        models.scripts.selected(models.activeScript.file());
+        return;
+    }
+
     if (window.history.replaceState) {
         window.history.replaceState(null, null, '#' + name);
     }

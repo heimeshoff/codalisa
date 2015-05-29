@@ -134,13 +134,19 @@ var ActiveScript = function() {
         self.published(self.draft());
     }
 
-    self.isDirty = ko.pureComputed(function() {
+    self.isDraftDirty = ko.pureComputed(function() {
         if (!self.file()) return false;
 
         var original = originalObj();
         return (self.title() != original.title ||
-                self.published() != original.script ||
                 self.draft() != original.draft);
+    });
+
+    self.isDirty = ko.pureComputed(function() {
+        if (!self.file()) return false;
+
+        return self.isDraftDirty() || 
+                (self.published() != originalObj().script);
     });
 
     self.isUnpublished = ko.pureComputed(function() {

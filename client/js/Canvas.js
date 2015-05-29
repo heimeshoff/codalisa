@@ -237,8 +237,10 @@ var Perspective = function(t, agent, world, all_agents, closest_particle, physic
     var closest_agent;
     if (all_agents.length)
         closest_agent = all_agents[0];
-    else
+    else {
         closest_agent = new Vector(1, 1);
+        closest_agent.ident = 'nobody';
+    }
     if (!closest_particle) closest_particle = agent;
 
     /**
