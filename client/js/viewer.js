@@ -3,6 +3,12 @@ var world = new World(1400, 900, canvasEl);
 var board = new Board('default');
 board.load();
 
+// Replace console.log and alert
+window.console = {
+  log: function() { }
+};
+window.alert = function() { };
+
 var displayFps = function(fps) {
     $('#viewer-fps').text('fps: ' + fps);
 }
