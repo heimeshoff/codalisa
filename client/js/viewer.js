@@ -15,6 +15,14 @@ var displayFps = function(fps) {
 
 world.addAgent(new MouseAgent(canvasEl, 'mouse'));
 
+var socket = io();
+
+socket.on('board-changed', function() {
+    board.load();
+});
+socket.on('signals', function(signals) { sim.setSignals(signals); });
+
+
 (function() {
     var currentAgents = {};
     var controlScripts = {};
@@ -63,40 +71,16 @@ world.addAgent(new MouseAgent(canvasEl, 'mouse'));
             loadScript(ident).then(applyScript);
         });
     });
+
+    socket.on('script-published', function(script) {
+        console.log('published', script);
+        loadScript(script.file).then(applyScript);
+    });
 }());
 
 
 var sim = new Simulation(world, 0, displayFps);
 sim.start();
-
-function loadAndAssign(agentNames, assignments) {
-    _.each(agentNames, function(name) {
-        loadScript(name).then(function(script) {
-            try {
-                _(assignments).filter(function(ass) {
-                    return ass.file == script.file;
-                }).each(function(ass) {
-                    console.log('Putting agent', script.file, 'in', ass.x, ass.y);
-                    var agent = makeAgentFromScript(script.script, script.file);
-                    sim.setAgent(ass.x, ass.y, agent);
-                });
-            } catch (e) {
-                console.log(e);
-            }
-        });
-    });
-}
-
-var socket = io();
-
-socket.on('script-published', function(script) {
-    console.log('published', script);
-    loadAndRefresh([script.file]);
-});
-socket.on('board-changed', function() {
-    board.load();
-});
-socket.on('signals', function(signals) { sim.setSignals(signals); });
 
 /**
  * Make the canvas' actual aspect corresponding to its virtual surface aspect
