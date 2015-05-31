@@ -63,7 +63,7 @@ def read():
     return read_sensors(chan, SENSORS)
   except (OSError, serial.serialutil.SerialException):
     chan = None
-    time.sleep(1)
+    time.sleep(2)
     return { n: 50 for n in SENSORS }
 
 try:

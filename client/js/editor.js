@@ -2,7 +2,7 @@
  * This is for load testing
  */
 var N = 1; // 20
-var fps = 10; // 0
+var fps = 0; // 0
 var times = undefined;
 
 /**
@@ -137,7 +137,7 @@ models.board.load();
 
 var socket = io();
 
-socket.on('scripts-changed', function(msg) { models.scripts.refresh(); });
+socket.on('scripts-changed', function(msg) { /* models.scripts.refresh(); */ });
 socket.on('signals', function(signals) { sim.setSignals(signals); });
 socket.on('script-error', function(err) { addErrorToLog(err.file, err.error); });
 socket.on('board-changed', function(board) { models.board.load(); });

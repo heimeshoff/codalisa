@@ -1,11 +1,12 @@
 var canvasEl = document.getElementById('surface');
-var world = new World(1400, 900, canvasEl);
+var world = new World(2000, 1100, canvasEl);
 var board = new Board('default');
 board.load();
 
 // Replace console.log and alert
 window.console = {
-  log: function() { }
+  log: function() { },
+  error: function() { }
 };
 window.alert = function() { };
 
@@ -77,7 +78,6 @@ socket.on('signals', function(signals) { sim.setSignals(signals); });
         loadScript(script.file).then(applyScript);
     });
 }());
-
 
 var sim = new Simulation(world, 0, displayFps);
 sim.start();

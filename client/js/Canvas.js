@@ -41,7 +41,7 @@ var World = function(w, h, canvasEl, errorHandler) {
     physics.MAX_SPEED = 300; // Pixels per second
     physics.MIN_SPEED = 50; // pps
     physics.VFPS = 60;
-    physics.FADE_TIME = physics.VFPS * 10;
+    physics.FADE_TIME = physics.VFPS * 5;
     physics.MAX_PARTICLES_PER_AGENT = physics.FADE_TIME;  // One particle per frame ought to be allowed
     physics.MAX_DRAW_DISTANCE = 100;
     physics.MAX_SIZE = 150;
@@ -456,7 +456,7 @@ var Simulation = (function() {
     // Shared scope for simulation objects
     var activeSimulation = null;
 
-    return function(world, fps, reportFps, times) {
+    var s = function(world, fps, reportFps, times) {
         var signals = {
             sound: 100,
             dist: 80,
@@ -536,4 +536,10 @@ var Simulation = (function() {
             if (sigs) signals = sigs;
         };
     };
+
+    s.setSignals = function(sigs) { 
+        if (activeSimulation) activeSimulation.setSignals(sigs);
+    }
+
+    return s;
 }());

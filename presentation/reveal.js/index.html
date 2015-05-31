@@ -51,17 +51,11 @@
         $(function() {
           /*
             SimRunner.setFps(20);
+          */
             var socket = io('http://localhost:3000');
-            SimRunner.setSignals({ 
-                dist: 50,
-                btn: 0,
-                sound: 50
-            });
-            
             socket.on('signals', function(signals) {
-                SimRunner.setSignals(signals);
+                Simulation.setSignals(signals);
             });
-            */
         });
 
         function prepare(id) {
@@ -487,20 +481,21 @@ function tick(p) {
                         <h2>Respond to the real world</h2>
                         <table style="width: 90%;"><tr><td>
                         <pre><code id='signals-script'>
+
 function setup(p) {
   p.setV(new Vector(200, 90));
 }
 
 function tick(p) {
   if (p.hz(10)) {
-    var size_x = p.signals.sound;
-    var size_y = p.signals.dist;
-    var alpha = p.signals.sound / 300;
+    var size_x = 5 + p.signals.sound / 3;
+    var size_y = 5 + (100 - p.signals.dist) / 3;
+    var alpha = 0.3 + p.signals.sound / 300;
     p.drop('circle', [0, 0], [size_x, size_y],
         palette[6], alpha);
   }
 
-  if (p.hz(1) && p.signals.btn) {
+  if (p.hz(5) && p.signals.btn) {
     p.turn(randNr(0, 180) - 90);
   }
 }

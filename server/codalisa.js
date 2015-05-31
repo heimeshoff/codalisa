@@ -32,6 +32,7 @@ signals.start(function(signals) {
 app.get('/s', function(req, res) {
     script_db.list().then(function(files) {
         res.json(files);
+        console.log('list');
     }).fail(mkErrorHandler(res));
 });
 
@@ -39,6 +40,7 @@ app.post('/s/create', function(req, res) {
     script_db.create(defaults.newScript()).then(function(name) {
         res.send(name);
         io.emit('scripts-changed', { file: req.params.file });
+        console.log('create');
     }).fail(mkErrorHandler(res));
 });
 
@@ -46,6 +48,7 @@ app.get('/s/:file', function(req, res) {
     script_db.load(req.params.file).then(function(file) {
         res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
         res.json(file);
+        console.log('get');
     }).fail(mkErrorHandler(res));
 });
 
@@ -118,6 +121,16 @@ app.post('/b/:file', function(req, res) {
         res.send('OK');
         io.emit('board-changed', { changedBoard: req.params.file });
     }).fail(mkErrorHandler(res));
+});
+
+app.post('/x/signals', function(req, res) {
+    signals.set(req.body);
+    res.send('OK');
+});
+
+app.get('/x/signals', function(req, res) {
+    signals.set(req.query);
+    res.send('OK');
 });
 
 //----------------------------------------------------------------------

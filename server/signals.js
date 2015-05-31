@@ -1,11 +1,32 @@
 var child_process = require('child_process');
 var _             = require('lodash');
 
+
+var signals = {};
+var on_signals = null;
+
+
+function fire() {
+    if (on_signals) {
+        console.log(signals);
+        on_signals(signals);
+    }
+}
+
+function mergeAndFire(ss) {
+    for (var k in ss) {
+        signals[k] = Number(ss[k]);
+    }
+    fire();
+}
+
 /**
  * Start the ev3 python script and raise events for the STDOUT
  */
 module.exports = {
     start: function(callback) {
+        on_signals = callback;
+
         var child = child_process.spawn('../ev3/read-ev3', [], {
                 stdio: 'pipe'
         });
@@ -23,8 +44,8 @@ module.exports = {
 
             if (lines.length > 0) {
                 var obj = JSON.parse(lines[lines.length - 1]);
-                console.log(obj);
-                callback(obj);
+                mergeAndFire(obj);
+                fire();
             }
         });
 
@@ -34,5 +55,13 @@ module.exports = {
         child.on('error', function(err) {
             console.warn('Child didn\'t start: ' + err);
         });
+    },
+
+    /**
+     * Allow signals from outside world
+     */
+    set: function(sigs) {
+        mergeAndFire(sigs);
+        fire();
     }
 };
